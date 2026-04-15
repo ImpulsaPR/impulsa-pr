@@ -1,7 +1,7 @@
 export function Skeleton({ className = '' }: { className?: string }) {
   return (
     <div
-      className={`animate-pulse rounded-xl bg-border/50 ${className}`}
+      className={`rounded-xl animate-shimmer ${className}`}
     />
   )
 }
@@ -13,7 +13,7 @@ export function StatCardSkeleton() {
         <Skeleton className="h-4 w-24" />
         <Skeleton className="h-10 w-10 rounded-xl" />
       </div>
-      <Skeleton className="h-8 w-32 mb-2" />
+      <Skeleton className="h-10 w-32 mb-2" />
       <Skeleton className="h-4 w-20" />
     </div>
   )

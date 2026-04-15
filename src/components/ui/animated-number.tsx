@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from '@/lib/i18n'
 
 interface AnimatedNumberProps {
   value: number
@@ -20,6 +21,7 @@ export function AnimatedNumber({
   const [display, setDisplay] = useState(0)
   const startRef = useRef<number | null>(null)
   const rafRef = useRef<number>(0)
+  const { locale } = useTranslation()
 
   useEffect(() => {
     startRef.current = null
@@ -42,7 +44,7 @@ export function AnimatedNumber({
     return () => cancelAnimationFrame(rafRef.current)
   }, [value, duration])
 
-  const formatted = display.toLocaleString('en-US', {
+  const formatted = display.toLocaleString(locale === 'es' ? 'es-US' : 'en-US', {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   })

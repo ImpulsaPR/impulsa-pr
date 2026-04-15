@@ -61,6 +61,7 @@ export interface Cliente {
   telefono: string | null
   plan: string | null
   created_at: string
+  avatar_url?: string | null
 }
 
 export interface User {

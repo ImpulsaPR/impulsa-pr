@@ -84,6 +84,8 @@ export function CreateLeadModal({ open, onClose, onCreated }: CreateLeadModalPro
 
   if (!open) return null
 
+  const inputClass = 'w-full rounded-xl border border-border bg-background pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted outline-none focus:border-foreground/30 focus:ring-1 focus:ring-foreground/10 transition-all'
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div
@@ -95,8 +97,8 @@ export function CreateLeadModal({ open, onClose, onCreated }: CreateLeadModalPro
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-              <UserPlus className="w-5 h-5 text-primary" />
+            <div className="w-10 h-10 rounded-xl bg-foreground/10 flex items-center justify-center">
+              <UserPlus className="w-5 h-5 text-foreground" />
             </div>
             <div>
               <h2 className="text-lg font-bold">{t('createLead.title')}</h2>
@@ -105,7 +107,7 @@ export function CreateLeadModal({ open, onClose, onCreated }: CreateLeadModalPro
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl hover:bg-border/30 text-muted hover:text-foreground transition-colors"
+            className="p-2 rounded-xl hover:bg-border/40 text-muted hover:text-foreground transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -124,7 +126,7 @@ export function CreateLeadModal({ open, onClose, onCreated }: CreateLeadModalPro
         ) : (
           <form onSubmit={handleSubmit} className="p-6 space-y-4">
             <div>
-              <label className="text-xs text-muted mb-1.5 block">{t('createLead.name')}</label>
+              <label className="text-xs text-muted mb-1.5 block font-medium">{t('createLead.name')}</label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
                 <input
@@ -133,13 +135,13 @@ export function CreateLeadModal({ open, onClose, onCreated }: CreateLeadModalPro
                   onChange={(e) => setNombre(e.target.value)}
                   placeholder={t('createLead.namePlaceholder')}
                   required
-                  className="w-full rounded-xl border border-border bg-background pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted outline-none focus:border-primary/50 transition-colors"
+                  className={inputClass}
                 />
               </div>
             </div>
 
             <div>
-              <label className="text-xs text-muted mb-1.5 block">{t('createLead.phone')}</label>
+              <label className="text-xs text-muted mb-1.5 block font-medium">{t('createLead.phone')}</label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
                 <input
@@ -148,13 +150,13 @@ export function CreateLeadModal({ open, onClose, onCreated }: CreateLeadModalPro
                   onChange={(e) => setTelefono(e.target.value)}
                   placeholder={t('createLead.phonePlaceholder')}
                   required
-                  className="w-full rounded-xl border border-border bg-background pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted outline-none focus:border-primary/50 transition-colors"
+                  className={inputClass}
                 />
               </div>
             </div>
 
             <div>
-              <label className="text-xs text-muted mb-1.5 block">{t('createLead.estValue')}</label>
+              <label className="text-xs text-muted mb-1.5 block font-medium">{t('createLead.estValue')}</label>
               <div className="relative">
                 <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
                 <input
@@ -164,7 +166,7 @@ export function CreateLeadModal({ open, onClose, onCreated }: CreateLeadModalPro
                   placeholder="0.00"
                   min="0"
                   step="0.01"
-                  className="w-full rounded-xl border border-border bg-background pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted outline-none focus:border-primary/50 transition-colors"
+                  className={inputClass}
                 />
               </div>
             </div>
@@ -178,7 +180,7 @@ export function CreateLeadModal({ open, onClose, onCreated }: CreateLeadModalPro
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 rounded-xl bg-primary text-background py-2.5 text-sm font-medium hover:bg-primary-dark transition-all duration-200 disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-foreground text-background py-2.5 text-sm font-medium hover:opacity-90 active:scale-[0.98] transition-all duration-200 disabled:opacity-50"
             >
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

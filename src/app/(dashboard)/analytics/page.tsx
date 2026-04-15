@@ -80,11 +80,11 @@ export default function AnalyticsPage() {
         ].map((m) => (
           <div
             key={m.label}
-            className="rounded-2xl border border-border bg-card p-5 hover:border-border-hover hover:bg-card-hover transition-all duration-300 group theme-transition"
+            className="rounded-2xl border border-border bg-card p-5 hover:border-border-hover hover:bg-card-hover hover:shadow-lg hover:shadow-foreground/5 hover:-translate-y-0.5 transition-all duration-300 group theme-transition"
           >
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs text-muted">{m.label}</span>
-              <m.icon className="w-4 h-4 text-muted group-hover:text-primary transition-colors" />
+              <m.icon className="w-4 h-4 text-muted group-hover:text-foreground transition-colors" />
             </div>
             <p className="text-2xl font-bold">{m.value}</p>
           </div>
@@ -97,7 +97,7 @@ export default function AnalyticsPage() {
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-sm font-semibold">{t('analytics.interestLevel')}</h3>
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold gradient-text-growth">{leads.length} {t('general.leads')}</span>
+              <span className="text-2xl font-bold text-foreground">{leads.length} {t('general.leads')}</span>
             </div>
           </div>
           <div className="flex items-end gap-6 h-48">

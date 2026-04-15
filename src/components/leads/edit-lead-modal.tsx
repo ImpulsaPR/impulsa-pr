@@ -35,7 +35,6 @@ export function EditLeadModal({ lead, onClose, onUpdated }: EditLeadModalProps) 
   useEffect(() => {
     if (!lead) return
 
-    // Fetch fresh data from Supabase to avoid stale state after drag-and-drop
     let cancelled = false
     const fetchFresh = async () => {
       const { data } = await getSupabase()
@@ -56,7 +55,6 @@ export function EditLeadModal({ lead, onClose, onUpdated }: EditLeadModalProps) 
       setSuccess(false)
     }
 
-    // Set immediately from prop for instant UI, then override with fresh data
     setNombre(lead.nombre)
     setTelefono(lead.telefono)
     setValorEstimado(String(lead.valor_estimado || 0))
@@ -106,7 +104,7 @@ export function EditLeadModal({ lead, onClose, onUpdated }: EditLeadModalProps) 
 
   if (!lead) return null
 
-  const inputClass = 'w-full rounded-xl border border-border bg-background pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted outline-none focus:border-primary/50 transition-colors'
+  const inputClass = 'w-full rounded-xl border border-border bg-background pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted outline-none focus:border-foreground/30 focus:ring-1 focus:ring-foreground/10 transition-all'
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -119,8 +117,8 @@ export function EditLeadModal({ lead, onClose, onUpdated }: EditLeadModalProps) 
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-accent-orange/10 flex items-center justify-center">
-              <Pencil className="w-5 h-5 text-accent-orange" />
+            <div className="w-10 h-10 rounded-xl bg-foreground/10 flex items-center justify-center">
+              <Pencil className="w-5 h-5 text-foreground" />
             </div>
             <div>
               <h2 className="text-lg font-bold">{t('editLead.title')}</h2>
@@ -129,7 +127,7 @@ export function EditLeadModal({ lead, onClose, onUpdated }: EditLeadModalProps) 
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl hover:bg-border/30 text-muted hover:text-foreground transition-colors"
+            className="p-2 rounded-xl hover:bg-border/40 text-muted hover:text-foreground transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -148,7 +146,7 @@ export function EditLeadModal({ lead, onClose, onUpdated }: EditLeadModalProps) 
         ) : (
           <form onSubmit={handleSubmit} className="p-6 space-y-4">
             <div>
-              <label className="text-xs text-muted mb-1.5 block">{t('createLead.name')}</label>
+              <label className="text-xs text-muted mb-1.5 block font-medium">{t('createLead.name')}</label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
                 <input
@@ -162,7 +160,7 @@ export function EditLeadModal({ lead, onClose, onUpdated }: EditLeadModalProps) 
             </div>
 
             <div>
-              <label className="text-xs text-muted mb-1.5 block">{t('createLead.phone')}</label>
+              <label className="text-xs text-muted mb-1.5 block font-medium">{t('createLead.phone')}</label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
                 <input
@@ -177,7 +175,7 @@ export function EditLeadModal({ lead, onClose, onUpdated }: EditLeadModalProps) 
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs text-muted mb-1.5 block">{t('createLead.estValue')}</label>
+                <label className="text-xs text-muted mb-1.5 block font-medium">{t('createLead.estValue')}</label>
                 <div className="relative">
                   <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
                   <input
@@ -191,9 +189,9 @@ export function EditLeadModal({ lead, onClose, onUpdated }: EditLeadModalProps) 
                 </div>
               </div>
               <div>
-                <label className="text-xs text-muted mb-1.5 block">{t('editLead.realValue')}</label>
+                <label className="text-xs text-muted mb-1.5 block font-medium">{t('editLead.realValue')}</label>
                 <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary" />
+                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
                   <input
                     type="number"
                     value={valorReal}
@@ -207,11 +205,11 @@ export function EditLeadModal({ lead, onClose, onUpdated }: EditLeadModalProps) 
             </div>
 
             <div>
-              <label className="text-xs text-muted mb-1.5 block">{t('editLead.status')}</label>
+              <label className="text-xs text-muted mb-1.5 block font-medium">{t('editLead.status')}</label>
               <select
                 value={estado}
                 onChange={(e) => setEstado(e.target.value as LeadEstado)}
-                className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-foreground outline-none focus:border-primary/50 transition-colors appearance-none cursor-pointer"
+                className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-foreground outline-none focus:border-foreground/30 focus:ring-1 focus:ring-foreground/10 transition-all appearance-none cursor-pointer"
               >
                 {estadoOptions.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -230,7 +228,7 @@ export function EditLeadModal({ lead, onClose, onUpdated }: EditLeadModalProps) 
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 rounded-xl bg-primary text-background py-2.5 text-sm font-medium hover:bg-primary-dark transition-all duration-200 disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-foreground text-background py-2.5 text-sm font-medium hover:opacity-90 active:scale-[0.98] transition-all duration-200 disabled:opacity-50"
             >
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

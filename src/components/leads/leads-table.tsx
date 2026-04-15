@@ -129,8 +129,8 @@ export function LeadsTable({ leads, loading, onRefetch, onLeadClick }: LeadsTabl
               onClick={() => setStatusFilter(f.value)}
               className={`px-3 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-all duration-200 ${
                 statusFilter === f.value
-                  ? 'bg-primary/10 text-primary border border-primary/20'
-                  : 'text-muted hover:text-foreground hover:bg-border/30 border border-transparent'
+                  ? 'bg-foreground text-background'
+                  : 'text-muted hover:text-foreground hover:bg-border/40 border border-transparent'
               }`}
             >
               {f.label}
@@ -143,7 +143,7 @@ export function LeadsTable({ leads, loading, onRefetch, onLeadClick }: LeadsTabl
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-border bg-background/50">
+            <tr className="border-b border-border bg-background/50 sticky top-0 z-10 backdrop-blur-sm">
               <th className="text-left px-4 py-3.5">
                 <button
                   onClick={() => toggleSort('nombre')}
@@ -181,8 +181,11 @@ export function LeadsTable({ leads, loading, onRefetch, onLeadClick }: LeadsTabl
             ) : filtered.length === 0 ? (
               <tr>
                 <td colSpan={8} className="px-4 py-16 text-center text-muted">
-                  <User className="w-10 h-10 mx-auto mb-3 opacity-20" />
-                  <p className="text-sm">{t('leads.noLeads')}</p>
+                  <User className="w-12 h-12 mx-auto mb-3 text-muted/20" />
+                  <p className="text-sm font-medium">{t('leads.noLeads')}</p>
+                  <p className="text-xs text-muted/60 mt-1">
+                    {t('dashboard.newLead')}
+                  </p>
                 </td>
               </tr>
             ) : (
@@ -190,11 +193,11 @@ export function LeadsTable({ leads, loading, onRefetch, onLeadClick }: LeadsTabl
                 <tr
                   key={lead.id}
                   onClick={() => onLeadClick?.(lead)}
-                  className="border-b border-border/50 hover:bg-card-hover transition-all duration-200 cursor-pointer group"
+                  className="border-b border-border/50 hover:bg-card-hover/80 transition-all duration-200 cursor-pointer group"
                 >
                   <td className="px-4 py-3.5">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium text-foreground group-hover:text-primary transition-colors">
+                      <span className="font-medium text-foreground group-hover:text-foreground/80 transition-colors">
                         {lead.nombre}
                       </span>
                       {!lead.humano_activo && lead.historial_mensajes?.length > 0 && (

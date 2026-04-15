@@ -7,7 +7,7 @@ import { useTranslation } from '@/lib/i18n'
 
 export function RecentActivity() {
   const { leads, loading } = useLeads()
-  const { t } = useTranslation()
+  const { t, locale } = useTranslation()
 
   if (loading) {
     return (
@@ -33,27 +33,36 @@ export function RecentActivity() {
   const timeAgo = (iso: string) => {
     const diff = Date.now() - new Date(iso).getTime()
     const mins = Math.floor(diff / 60000)
-    if (mins < 60) return `${mins} min`
+    const prefix = locale === 'es' ? 'hace ' : ''
+    const suffix = locale === 'en' ? ' ago' : ''
+    if (mins < 1) return locale === 'es' ? 'ahora' : 'now'
+    if (mins < 60) return `${prefix}${mins} min${suffix}`
     const hrs = Math.floor(mins / 60)
-    if (hrs < 24) return `${hrs}h`
-    return `${Math.floor(hrs / 24)}d`
+    if (hrs < 24) return `${prefix}${hrs}h${suffix}`
+    const days = Math.floor(hrs / 24)
+    return `${prefix}${days}d${suffix}`
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-6 theme-transition">
+    <div className="rounded-2xl border border-border bg-card p-6 theme-transition hover:shadow-lg hover:shadow-foreground/5 transition-all duration-300">
       <h3 className="text-sm font-semibold text-foreground mb-4">
         {t('activity.title')}
       </h3>
       <div className="space-y-4">
         {recentLeads.length === 0 && (
-          <p className="text-sm text-muted text-center py-4">{t('activity.noActivity')}</p>
+          <div className="text-center py-8">
+            <UserPlus className="w-10 h-10 mx-auto mb-3 text-muted/30" />
+            <p className="text-sm text-muted">{t('activity.noActivity')}</p>
+            <p className="text-xs text-muted/60 mt-1">
+              {locale === 'es' ? 'Los leads nuevos apareceran aqui' : 'New leads will appear here'}
+            </p>
+          </div>
         )}
         {recentLeads.map((lead) => {
           const hasMessages = lead.historial_mensajes?.length > 0
           const isAI = !lead.humano_activo && hasMessages
           const isNew = !hasMessages
 
-          const color = isNew ? 'text-blue-400' : isAI ? 'text-primary' : 'text-accent-yellow'
           const tag = isNew
             ? t('activity.newLead')
             : isAI
@@ -71,12 +80,18 @@ export function RecentActivity() {
             ? `${isAI ? t('activity.aiResponded') : t('activity.conversationWith')} ${lead.nombre}`
             : `${t('activity.leadRegistered')}: ${lead.nombre}`
 
+          // Lead initials
+          const leadInitials = lead.nombre
+            .split(' ')
+            .map((n) => n[0])
+            .join('')
+            .slice(0, 2)
+            .toUpperCase()
+
           return (
             <div key={lead.id} className="flex items-start gap-3 group">
-              <div
-                className={`mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center bg-border/30 ${color} transition-transform duration-200 group-hover:scale-105`}
-              >
-                {isNew ? <UserPlus className="w-4 h-4" /> : isAI ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
+              <div className="mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center bg-border/40 text-foreground text-[11px] font-bold transition-transform duration-200 group-hover:scale-105">
+                {leadInitials}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-foreground truncate">{label}</p>

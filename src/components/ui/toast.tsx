@@ -35,13 +35,20 @@ const styles = {
   info: 'border-blue-400/30 bg-blue-400/10 text-blue-400',
 }
 
+const progressStyles = {
+  success: 'bg-primary',
+  error: 'bg-accent-red',
+  warning: 'bg-accent-orange',
+  info: 'bg-blue-400',
+}
+
 function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }) {
   const Icon = icons[toast.type]
 
   return (
     <div
       className={`
-        flex items-center gap-3 px-4 py-3 rounded-xl border shadow-lg
+        relative overflow-hidden flex items-center gap-3 px-4 py-3 rounded-xl border shadow-lg
         animate-slide-in-right ${styles[toast.type]}
       `}
     >
@@ -53,6 +60,10 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }
       >
         <X className="w-3.5 h-3.5" />
       </button>
+      {/* Progress bar */}
+      <div className="absolute bottom-0 left-0 right-0 h-0.5">
+        <div className={`h-full ${progressStyles[toast.type]} opacity-40 animate-toast-progress`} />
+      </div>
     </div>
   )
 }

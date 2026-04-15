@@ -17,7 +17,14 @@ export function LeadCard({ lead, isDragging, isUpdating, onClick }: LeadCardProp
     phone.replace('@c.us', '').replace('@s.whatsapp.net', '')
 
   const formatCurrency = (v: number) =>
-    v > 0 ? `$${v.toLocaleString()}` : '—'
+    v > 0 ? `$${v.toLocaleString()}` : '\u2014'
+
+  const initials = lead.nombre
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
 
   return (
     <div
@@ -26,29 +33,34 @@ export function LeadCard({ lead, isDragging, isUpdating, onClick }: LeadCardProp
         rounded-xl border bg-card p-3.5 cursor-grab active:cursor-grabbing
         transition-all duration-200 group
         ${isDragging
-          ? 'border-primary/40 bg-card shadow-lg shadow-primary/10 scale-[1.02] rotate-1 opacity-90'
+          ? 'border-border-hover bg-card shadow-lg shadow-foreground/5 scale-[1.02] rotate-1 opacity-90'
           : isUpdating
-            ? 'border-primary/20 opacity-60'
-            : 'border-border hover:border-border-hover hover:bg-card-hover'
+            ? 'border-border opacity-60'
+            : 'border-border hover:border-border-hover hover:bg-card-hover hover:shadow-md hover:shadow-foreground/5'
         }
       `}
     >
       <div className="flex items-start justify-between gap-2">
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-foreground truncate">
-            {lead.nombre}
-          </p>
-          <div className="flex items-center gap-1.5 mt-1.5">
-            <Phone className="w-3 h-3 text-muted flex-shrink-0" />
-            <span className="text-[11px] text-muted font-mono truncate">
-              {formatPhone(lead.telefono)}
-            </span>
+        <div className="flex items-start gap-2.5 flex-1 min-w-0">
+          <div className="w-7 h-7 rounded-md bg-foreground/10 flex items-center justify-center text-[10px] font-bold text-foreground flex-shrink-0 mt-0.5">
+            {initials}
           </div>
-          <div className="flex items-center gap-1.5 mt-1">
-            <DollarSign className="w-3 h-3 text-muted flex-shrink-0" />
-            <span className="text-[11px] text-foreground font-medium">
-              {formatCurrency(lead.valor_estimado)}
-            </span>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-foreground truncate">
+              {lead.nombre}
+            </p>
+            <div className="flex items-center gap-1.5 mt-1.5">
+              <Phone className="w-3 h-3 text-muted flex-shrink-0" />
+              <span className="text-[11px] text-muted font-mono truncate">
+                {formatPhone(lead.telefono)}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 mt-1">
+              <DollarSign className="w-3 h-3 text-muted flex-shrink-0" />
+              <span className="text-[11px] text-foreground font-medium">
+                {formatCurrency(lead.valor_estimado)}
+              </span>
+            </div>
           </div>
         </div>
         <GripVertical className="w-4 h-4 text-muted/30 group-hover:text-muted transition-colors flex-shrink-0 mt-0.5" />

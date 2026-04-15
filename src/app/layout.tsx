@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   title: "Impulsa PR — Business Automation Dashboard",
   description: "Sistema de automatización de clientes — Manage leads, automate WhatsApp conversations, and grow your revenue with Impulsa PR.",
   icons: {
-    icon: "/icon.svg",
+    icon: "/logo-circle.png",
   },
 };
 

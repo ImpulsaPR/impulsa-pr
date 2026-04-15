@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Save, Bell, Shield, Palette, Globe, Zap, Loader2 } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Save, Bell, Shield, Palette, Globe, Zap, Loader2, Camera, Trash2 } from 'lucide-react'
 import { getSupabase } from '@/lib/supabase'
 import { useCliente } from '@/hooks/use-cliente'
+import { useAvatar } from '@/hooks/use-avatar'
 import { useToast } from '@/components/ui/toast'
 import { useTheme } from '@/lib/theme'
 import { useTranslation } from '@/lib/i18n'
@@ -51,6 +52,9 @@ export default function SettingsPage() {
   const { toast } = useToast()
   const { theme, setTheme } = useTheme()
   const { locale, setLocale, t } = useTranslation()
+
+  const { avatarUrl, updateAvatar, removeAvatar } = useAvatar()
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [nombre, setNombre] = useState('')
   const [email, setEmail] = useState('')
@@ -126,12 +130,19 @@ export default function SettingsPage() {
 
       {/* Profile */}
       <div className="rounded-2xl border border-border bg-card p-6 theme-transition">
-        <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
+        <h3 className="text-sm font-semibold mb-5 flex items-center gap-2">
           <Shield className="w-4 h-4 text-muted" />
           {t('settings.profile')}
         </h3>
         {clienteLoading ? (
           <div className="space-y-4">
+            <div className="flex items-center gap-5">
+              <Skeleton className="w-20 h-20 rounded-full" />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-3 w-24" />
+              </div>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Skeleton className="h-10 w-full" />
               <Skeleton className="h-10 w-full" />
@@ -139,7 +150,91 @@ export default function SettingsPage() {
             <Skeleton className="h-10 w-full" />
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-5">
+            {/* Avatar section */}
+            <div className="flex items-center gap-5">
+              <div className="relative group">
+                <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-border group-hover:border-border-hover transition-colors">
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-foreground flex items-center justify-center text-background text-2xl font-bold">
+                      {(cliente?.nombre || 'U').split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                {/* Hover overlay */}
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+                >
+                  <Camera className="w-5 h-5 text-white" />
+                </button>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-foreground">{t('settings.profilePhoto')}</p>
+                <p className="text-xs text-muted mt-0.5">{t('settings.profilePhotoDesc')}</p>
+                <div className="flex items-center gap-2 mt-2.5">
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-foreground text-background hover:opacity-90 active:scale-[0.97] transition-all"
+                  >
+                    {t('settings.uploadPhoto')}
+                  </button>
+                  {avatarUrl && (
+                    <button
+                      onClick={removeAvatar}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium text-accent-red border border-accent-red/20 hover:bg-accent-red/10 transition-all flex items-center gap-1"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      {t('settings.removePhoto')}
+                    </button>
+                  )}
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (!file) return
+                    if (file.size > 2 * 1024 * 1024) {
+                      toast(t('settings.photoTooLarge'), 'error')
+                      return
+                    }
+                    const reader = new FileReader()
+                    reader.onload = () => {
+                      // Resize to 200x200 for performance
+                      const img = document.createElement('img')
+                      img.onload = () => {
+                        const canvas = document.createElement('canvas')
+                        canvas.width = 200
+                        canvas.height = 200
+                        const ctx = canvas.getContext('2d')!
+                        // Center crop
+                        const size = Math.min(img.width, img.height)
+                        const sx = (img.width - size) / 2
+                        const sy = (img.height - size) / 2
+                        ctx.drawImage(img, sx, sy, size, size, 0, 0, 200, 200)
+                        const dataUrl = canvas.toDataURL('image/webp', 0.85)
+                        updateAvatar(dataUrl)
+                        toast(t('settings.photoUpdated'))
+                      }
+                      img.src = reader.result as string
+                    }
+                    reader.readAsDataURL(file)
+                    e.target.value = ''
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Form fields */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-xs text-muted mb-1.5 block">{t('settings.name')}</label>
@@ -237,7 +332,7 @@ export default function SettingsPage() {
             onClick={() => setTheme('dark')}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
               theme === 'dark'
-                ? 'border-2 border-primary bg-primary/5 text-primary'
+                ? 'border-2 border-foreground bg-foreground/5 text-foreground'
                 : 'border border-border text-muted hover:text-foreground hover:border-border-hover'
             }`}
           >
@@ -248,7 +343,7 @@ export default function SettingsPage() {
             onClick={() => setTheme('light')}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
               theme === 'light'
-                ? 'border-2 border-primary bg-primary/5 text-primary'
+                ? 'border-2 border-foreground bg-foreground/5 text-foreground'
                 : 'border border-border text-muted hover:text-foreground hover:border-border-hover'
             }`}
           >
@@ -291,7 +386,7 @@ export default function SettingsPage() {
         <button
           onClick={handleSave}
           disabled={saving || clienteLoading}
-          className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary text-background text-sm font-medium hover:bg-primary-dark transition-all duration-200 hover:shadow-lg hover:shadow-primary/20 disabled:opacity-50"
+          className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-foreground text-background text-sm font-medium hover:opacity-90 active:scale-[0.98] transition-all duration-200 hover:shadow-lg disabled:opacity-50"
         >
           {saving ? (
             <Loader2 className="w-4 h-4 animate-spin" />
