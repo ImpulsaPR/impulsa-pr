@@ -1,0 +1,197 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { X, Loader2, UserPlus, User, Phone, DollarSign, CheckCircle } from 'lucide-react'
+import { getSupabase } from '@/lib/supabase'
+import { getCurrentCliente } from '@/lib/get-current-cliente'
+import { useToast } from '@/components/ui/toast'
+import { useTranslation } from '@/lib/i18n'
+
+interface CreateLeadModalProps {
+  open: boolean
+  onClose: () => void
+  onCreated: () => void
+}
+
+export function CreateLeadModal({ open, onClose, onCreated }: CreateLeadModalProps) {
+  const [nombre, setNombre] = useState('')
+  const [telefono, setTelefono] = useState('')
+  const [valorEstimado, setValorEstimado] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState(false)
+  const { toast } = useToast()
+  const { t } = useTranslation()
+
+  useEffect(() => {
+    if (open) {
+      setNombre('')
+      setTelefono('')
+      setValorEstimado('')
+      setError('')
+      setSuccess(false)
+    }
+  }, [open])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+
+    const cliente = await getCurrentCliente()
+    if (!cliente) {
+      setError(t('createLead.accountError'))
+      setLoading(false)
+      return
+    }
+
+    const { error: insertError } = await getSupabase()
+      .from('leads')
+      .insert({
+        cliente_id: cliente.id,
+        nombre,
+        telefono,
+        valor_estimado: parseFloat(valorEstimado) || 0,
+        estado: 'nuevo',
+        valor_real: 0,
+        nivel_interes: 'bajo',
+        historial_mensajes: [],
+        historial_resumen: '',
+        humano_activo: false,
+        es_viable: null,
+        es_contacto_guardado: false,
+        fecha_primer_contacto: new Date().toISOString(),
+        fecha_ultimo_contacto: new Date().toISOString(),
+        source: 'manual',
+      })
+
+    if (insertError) {
+      setError(insertError.message)
+      toast(insertError.message, 'error')
+      setLoading(false)
+      return
+    }
+
+    setSuccess(true)
+    setLoading(false)
+    toast(`"${nombre}" ${t('createLead.created')}`)
+    onCreated()
+
+    setTimeout(() => {
+      onClose()
+    }, 1200)
+  }
+
+  if (!open) return null
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in"
+        onClick={onClose}
+      />
+
+      <div className="relative w-full max-w-md mx-4 rounded-2xl border border-border bg-card shadow-2xl animate-scale-in theme-transition">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-border">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <UserPlus className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold">{t('createLead.title')}</h2>
+              <p className="text-xs text-muted">{t('createLead.subtitle')}</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-xl hover:bg-border/30 text-muted hover:text-foreground transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {success ? (
+          <div className="p-8 text-center">
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="w-8 h-8 text-primary" />
+            </div>
+            <h3 className="text-lg font-bold">{t('createLead.success')}</h3>
+            <p className="text-sm text-muted mt-1">
+              {nombre} {t('createLead.successMsg')}
+            </p>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <div>
+              <label className="text-xs text-muted mb-1.5 block">{t('createLead.name')}</label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+                <input
+                  type="text"
+                  value={nombre}
+                  onChange={(e) => setNombre(e.target.value)}
+                  placeholder={t('createLead.namePlaceholder')}
+                  required
+                  className="w-full rounded-xl border border-border bg-background pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted outline-none focus:border-primary/50 transition-colors"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs text-muted mb-1.5 block">{t('createLead.phone')}</label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+                <input
+                  type="tel"
+                  value={telefono}
+                  onChange={(e) => setTelefono(e.target.value)}
+                  placeholder={t('createLead.phonePlaceholder')}
+                  required
+                  className="w-full rounded-xl border border-border bg-background pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted outline-none focus:border-primary/50 transition-colors"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs text-muted mb-1.5 block">{t('createLead.estValue')}</label>
+              <div className="relative">
+                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+                <input
+                  type="number"
+                  value={valorEstimado}
+                  onChange={(e) => setValorEstimado(e.target.value)}
+                  placeholder="0.00"
+                  min="0"
+                  step="0.01"
+                  className="w-full rounded-xl border border-border bg-background pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted outline-none focus:border-primary/50 transition-colors"
+                />
+              </div>
+            </div>
+
+            {error && (
+              <div className="rounded-xl bg-accent-red/10 border border-accent-red/20 px-4 py-2.5 text-sm text-accent-red">
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-primary text-background py-2.5 text-sm font-medium hover:bg-primary-dark transition-all duration-200 disabled:opacity-50"
+            >
+              {loading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <>
+                  <UserPlus className="w-4 h-4" />
+                  {t('createLead.submit')}
+                </>
+              )}
+            </button>
+          </form>
+        )}
+      </div>
+    </div>
+  )
+}
