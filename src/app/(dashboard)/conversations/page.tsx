@@ -163,7 +163,7 @@ export default function ConversationsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 h-[70vh] min-h-[500px] max-h-[750px]">
         {/* Lista — siempre visible en lg+, oculta en mobile cuando hay seleccion */}
         <div
-          className={`lg:col-span-1 h-full ${
+          className={`lg:col-span-1 h-full min-h-0 overflow-hidden ${
             selected ? 'hidden lg:block' : 'block'
           }`}
         >
@@ -181,7 +181,7 @@ export default function ConversationsPage() {
 
         {/* Chat — siempre visible en lg+, full-width en mobile cuando hay seleccion */}
         <div
-          className={`lg:col-span-2 h-full ${
+          className={`lg:col-span-2 h-full min-h-0 overflow-hidden ${
             selected ? 'block' : 'hidden lg:block'
           }`}
         >
