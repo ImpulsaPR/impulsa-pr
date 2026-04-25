@@ -17,11 +17,13 @@ import {
   LifeBuoy,
   Sparkles,
   BookOpen,
+  ShieldCheck,
 } from 'lucide-react'
 import { useState, useEffect, type ComponentType } from 'react'
 import { Logo } from '@/components/ui/logo'
 import { useTranslation } from '@/lib/i18n'
 import { useSidebarCollapsed } from '@/hooks/use-sidebar'
+import { useAdmin } from '@/hooks/use-admin'
 
 const primaryNav = [
   { href: '/', labelKey: 'nav.dashboard' as const, icon: LayoutDashboard },
@@ -38,7 +40,13 @@ const utilityNav = [
   { href: '/soporte', labelKey: 'nav.support' as const, icon: LifeBuoy },
 ]
 
-type NavItem = { href: string; labelKey: 'nav.dashboard' | 'nav.analytics' | 'nav.leads' | 'nav.pipeline' | 'nav.conversations' | 'nav.support' | 'nav.settings' | 'nav.demoIA' | 'nav.knowledge'; icon: ComponentType<{ className?: string }> }
+const adminNavItem = {
+  href: '/admin/clientes',
+  labelKey: 'nav.admin' as const,
+  icon: ShieldCheck,
+}
+
+type NavItem = { href: string; labelKey: 'nav.dashboard' | 'nav.analytics' | 'nav.leads' | 'nav.pipeline' | 'nav.conversations' | 'nav.support' | 'nav.settings' | 'nav.demoIA' | 'nav.knowledge' | 'nav.admin'; icon: ComponentType<{ className?: string }> }
 
 function NavLink({ item, pathname, collapsed, mobileOpen, t }: {
   item: NavItem
@@ -78,6 +86,7 @@ export function Sidebar() {
   const { collapsed, toggle: toggleCollapsed } = useSidebarCollapsed()
   const [mobileOpen, setMobileOpen] = useState(false)
   const { t } = useTranslation()
+  const { isSuperAdmin } = useAdmin()
 
   useEffect(() => {
     setMobileOpen(false)
@@ -143,6 +152,15 @@ export function Sidebar() {
               t={t}
             />
           ))}
+          {isSuperAdmin && (
+            <NavLink
+              item={adminNavItem}
+              pathname={pathname}
+              collapsed={collapsed}
+              mobileOpen={mobileOpen}
+              t={t}
+            />
+          )}
         </div>
       </nav>
 
