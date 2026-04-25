@@ -9,6 +9,7 @@ import { ConversationList, type ConversationListHandle } from '@/components/conv
 import { ChatWindow } from '@/components/conversations/chat-window'
 import { EmptyState } from '@/components/conversations/empty-state'
 import { sanitizeName } from '@/components/conversations/avatar'
+import { LeadContextSidebar } from '@/components/conversations/lead-context-sidebar'
 
 const FLASH_MS = 600
 
@@ -18,6 +19,7 @@ export default function ConversationsPage() {
   const [search, setSearch] = useState('')
   const [toggling, setToggling] = useState(false)
   const [flashingPhones, setFlashingPhones] = useState<Set<string>>(new Set())
+  const [contextOpen, setContextOpen] = useState(false)
   const { toast } = useToast()
   const { t } = useTranslation()
   const listRef = useRef<ConversationListHandle>(null)
@@ -193,6 +195,7 @@ export default function ConversationsPage() {
               onToggleAI={handleToggleAI}
               toggling={toggling}
               onBack={() => setSelectedPhone(null)}
+              onOpenContext={() => setContextOpen(true)}
             />
           ) : (
             <div className="h-full flex items-center justify-center rounded-2xl border border-border bg-card theme-transition">
@@ -201,6 +204,15 @@ export default function ConversationsPage() {
           )}
         </div>
       </div>
+
+      {selected && (
+        <LeadContextSidebar
+          lead={selected.lead}
+          phone={selected.telefono}
+          open={contextOpen}
+          onClose={() => setContextOpen(false)}
+        />
+      )}
     </div>
   )
 }

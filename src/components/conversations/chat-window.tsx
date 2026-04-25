@@ -17,6 +17,7 @@ interface ChatWindowProps {
   onToggleAI: () => void
   toggling: boolean
   onBack?: () => void
+  onOpenContext?: () => void
 }
 
 const SCROLL_THRESHOLD = 80 // px desde el fondo para considerar "en el fondo"
@@ -28,6 +29,7 @@ export function ChatWindow({
   onToggleAI,
   toggling,
   onBack,
+  onOpenContext,
 }: ChatWindowProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -107,7 +109,13 @@ export function ChatWindow({
 
   return (
     <div className="h-full flex flex-col rounded-2xl border border-border bg-card overflow-hidden theme-transition">
-      <ChatHeader conv={conv} onBack={onBack} onToggleAI={onToggleAI} toggling={toggling} />
+      <ChatHeader
+        conv={conv}
+        onBack={onBack}
+        onToggleAI={onToggleAI}
+        toggling={toggling}
+        onOpenContext={onOpenContext}
+      />
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto convo-scroll px-4 py-3 relative">
         {messages.length === 0 ? (

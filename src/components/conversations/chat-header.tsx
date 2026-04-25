@@ -1,7 +1,6 @@
 'use client'
 
-import Link from 'next/link'
-import { ArrowLeft, ExternalLink, CalendarPlus, Bot, User, Loader2 } from 'lucide-react'
+import { ArrowLeft, Info, CalendarPlus, Bot, User, Loader2 } from 'lucide-react'
 import { Avatar, sanitizeName } from './avatar'
 import { useTranslation } from '@/lib/i18n'
 import type { Conversation } from '@/hooks/use-conversations'
@@ -11,9 +10,10 @@ interface ChatHeaderProps {
   onBack?: () => void
   onToggleAI: () => void
   toggling: boolean
+  onOpenContext?: () => void
 }
 
-export function ChatHeader({ conv, onBack, onToggleAI, toggling }: ChatHeaderProps) {
+export function ChatHeader({ conv, onBack, onToggleAI, toggling, onOpenContext }: ChatHeaderProps) {
   const { t } = useTranslation()
   const isAI = !conv.lead?.humano_activo
   const rawName = conv.lead?.nombre || `+${conv.telefono}`
@@ -57,16 +57,14 @@ export function ChatHeader({ conv, onBack, onToggleAI, toggling }: ChatHeaderPro
       </div>
 
       <div className="flex items-center gap-1 flex-shrink-0">
-        {conv.lead?.id && (
-          <Link
-            href={`/leads/${conv.lead.id}`}
-            aria-label="Ver lead completo"
-            title="Ver lead completo"
-            className="p-2 rounded-lg hover:bg-card-hover transition-colors text-muted hover:text-foreground"
-          >
-            <ExternalLink className="w-4 h-4" />
-          </Link>
-        )}
+        <button
+          onClick={onOpenContext}
+          aria-label="Ver contexto del lead"
+          title="Ver contexto del lead"
+          className="p-2 rounded-lg hover:bg-card-hover transition-colors text-muted hover:text-foreground"
+        >
+          <Info className="w-4 h-4" />
+        </button>
         <button
           onClick={() => {
             console.log('Agendar cita rápida — telefono:', conv.telefono, 'lead:', conv.lead?.id)
