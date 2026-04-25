@@ -16,6 +16,7 @@ import {
   X,
   LifeBuoy,
   Sparkles,
+  BookOpen,
 } from 'lucide-react'
 import { useState, useEffect, type ComponentType } from 'react'
 import { Logo } from '@/components/ui/logo'
@@ -27,6 +28,7 @@ const primaryNav = [
   { href: '/leads', labelKey: 'nav.leads' as const, icon: Users },
   { href: '/pipeline', labelKey: 'nav.pipeline' as const, icon: Kanban },
   { href: '/conversations', labelKey: 'nav.conversations' as const, icon: MessageSquare },
+  { href: '/knowledge', labelKey: 'nav.knowledge' as const, icon: BookOpen },
   { href: '/analytics', labelKey: 'nav.analytics' as const, icon: BarChart3 },
   { href: '/demo-ia', labelKey: 'nav.demoIA' as const, icon: Sparkles },
 ]
@@ -36,7 +38,7 @@ const utilityNav = [
   { href: '/soporte', labelKey: 'nav.support' as const, icon: LifeBuoy },
 ]
 
-type NavItem = { href: string; labelKey: 'nav.dashboard' | 'nav.analytics' | 'nav.leads' | 'nav.pipeline' | 'nav.conversations' | 'nav.support' | 'nav.settings' | 'nav.demoIA'; icon: ComponentType<{ className?: string }> }
+type NavItem = { href: string; labelKey: 'nav.dashboard' | 'nav.analytics' | 'nav.leads' | 'nav.pipeline' | 'nav.conversations' | 'nav.support' | 'nav.settings' | 'nav.demoIA' | 'nav.knowledge'; icon: ComponentType<{ className?: string }> }
 
 function NavLink({ item, pathname, collapsed, mobileOpen, t }: {
   item: NavItem
