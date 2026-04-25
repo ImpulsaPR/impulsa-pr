@@ -10,7 +10,7 @@ const SCOPES = [
   'https://www.googleapis.com/auth/calendar',
   'https://www.googleapis.com/auth/calendar.events',
   'https://www.googleapis.com/auth/userinfo.email',
-  'openid',
+  'https://www.googleapis.com/auth/userinfo.profile',
 ].join(' ')
 
 export async function GET() {
