@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Impulsa PR — Dashboard Features</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0B0B0B;
+    --card: #111111;
+    --border: #1E1E1E;
+    --text: #F5F5F5;
+    --muted: #737373;
+    --green: #00CC6A;
+    --orange: #F97316;
+    --red: #EF4444;
+    --blue: #3B82F6;
+    --yellow: #EAB308;
+    --purple: #A855F7;
+  }
+
+  html { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); }
+
+  @media print {
+    html, body { background: #0B0B0B !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .page { page-break-after: always; break-after: page; }
+    .page:last-child { page-break-after: avoid; break-after: avoid; }
+    .no-print { display: none !important; }
+  }
+
+  @page { size: A4 landscape; margin: 0; }
+
+  .page {
+    width: 297mm;
+    height: 210mm;
+    padding: 32px 48px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    background: var(--bg);
+  }
+
+  .page::before {
+    content: '';
+    position: absolute;
+    top: -120px;
+    right: -120px;
+    width: 400px;
+    height: 400px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,204,106,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .watermark {
+    position: absolute;
+    bottom: 16px;
+    right: 32px;
+    font-size: 9px;
+    color: var(--muted);
+    opacity: 0.5;
+  }
+
+  .page-num {
+    position: absolute;
+    bottom: 16px;
+    left: 32px;
+    font-size: 9px;
+    color: var(--muted);
+    opacity: 0.5;
+  }
+
+  /* -------- COVER -------- */
+  .cover { text-align: center; align-items: center; }
+  .cover .logo-text {
+    font-size: 48px;
+    font-weight: 900;
+    letter-spacing: -2px;
+    background: linear-gradient(135deg, var(--green), var(--blue));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .cover .tagline {
+    font-size: 18px;
+    color: var(--muted);
+    margin-top: 12px;
+    font-weight: 400;
+  }
+  .cover .divider {
+    width: 60px;
+    height: 3px;
+    background: var(--green);
+    border-radius: 4px;
+    margin: 28px auto;
+  }
+  .cover .meta {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 8px;
+  }
+  .cover .stats-row {
+    display: flex;
+    gap: 48px;
+    justify-content: center;
+    margin-top: 36px;
+  }
+  .cover .stats-row .stat-item {
+    text-align: center;
+  }
+  .cover .stats-row .stat-value {
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: -1px;
+  }
+  .cover .stats-row .stat-label {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* -------- CONTENT PAGES -------- */
+  .section-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--green);
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  h2 {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin-bottom: 6px;
+  }
+
+  .subtitle {
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: 28px;
+    line-height: 1.5;
+    max-width: 700px;
+  }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+  .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; }
+
+  .feature-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .feature-card .icon-box {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    margin-bottom: 14px;
+  }
+
+  .feature-card h3 {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .feature-card p {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  .feature-card .accent-line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+  }
+
+  .highlight-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .highlight-box .num {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: var(--green);
+    color: var(--bg);
+    font-size: 13px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .highlight-box h4 {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 3px;
+  }
+
+  .highlight-box p {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .stat-mini {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    text-align: center;
+  }
+
+  .stat-mini .value {
+    font-size: 26px;
+    font-weight: 900;
+    letter-spacing: -1px;
+  }
+
+  .stat-mini .label {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  .bullet-list {
+    list-style: none;
+    padding: 0;
+  }
+
+  .bullet-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 0;
+    font-size: 13px;
+    line-height: 1.5;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .bullet-list li:last-child { border-bottom: none; }
+
+  .bullet-list .check {
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    background: rgba(0,204,106,0.15);
+    color: var(--green);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .tag {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 600;
+    border: 1px solid;
+  }
+
+  .tag-green { background: rgba(0,204,106,0.1); color: var(--green); border-color: rgba(0,204,106,0.2); }
+  .tag-blue { background: rgba(59,130,246,0.1); color: var(--blue); border-color: rgba(59,130,246,0.2); }
+  .tag-orange { background: rgba(249,115,22,0.1); color: var(--orange); border-color: rgba(249,115,22,0.2); }
+  .tag-purple { background: rgba(168,85,247,0.1); color: var(--purple); border-color: rgba(168,85,247,0.2); }
+
+  .pipeline-bar {
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    position: relative;
+  }
+
+  .pipeline-label {
+    position: absolute;
+    right: 12px;
+    font-size: 11px;
+    font-weight: 500;
+    opacity: 0.8;
+  }
+
+  .download-btn {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 100;
+    background: var(--green);
+    color: var(--bg);
+    border: none;
+    padding: 14px 28px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: 0 4px 24px rgba(0,204,106,0.3);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .download-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(0,204,106,0.4);
+  }
+</style>
+</head>
+<body>
+
+<!-- Download Button -->
+<button class="download-btn no-print" onclick="window.print()">
+  Descargar PDF
+</button>
+
+<!-- ============ PAGE 1: COVER ============ -->
+<div class="page cover">
+  <div class="logo-text">Impulsa PR</div>
+  <div class="tagline">CRM Dashboard &mdash; Presentacion de Funcionalidades</div>
+  <div class="divider"></div>
+  <p class="meta">Plataforma de gestion de leads con inteligencia artificial</p>
+  <p class="meta" style="opacity: 0.5; margin-top: 4px;">Abril 2026</p>
+
+  <div class="stats-row">
+    <div class="stat-item">
+      <div class="stat-value" style="color: var(--green);">6</div>
+      <div class="stat-label">Modulos</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" style="color: var(--blue);">AI</div>
+      <div class="stat-label">Integrado</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" style="color: var(--orange);">24/7</div>
+      <div class="stat-label">Automatizado</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" style="color: var(--purple);">2</div>
+      <div class="stat-label">Idiomas</div>
+    </div>
+  </div>
+
+  <div class="watermark">impulsa-pr &bull; confidencial</div>
+</div>
+
+<!-- ============ PAGE 2: OVERVIEW ============ -->
+<div class="page">
+  <div class="section-label">Vista General</div>
+  <h2>Que ofrece el Dashboard</h2>
+  <p class="subtitle">Un CRM moderno con IA integrada, diseñado para automatizar la gestion de leads y maximizar conversiones.</p>
+
+  <div class="grid-3">
+    <div class="feature-card">
+      <div class="accent-line" style="background: var(--green);"></div>
+      <div class="icon-box" style="background: rgba(0,204,106,0.15); color: var(--green);">📊</div>
+      <h3>Dashboard Principal</h3>
+      <p>KPIs en tiempo real, sparklines de 7 dias, tendencias comparativas y saludo personalizado por hora del dia.</p>
+    </div>
+    <div class="feature-card">
+      <div class="accent-line" style="background: var(--blue);"></div>
+      <div class="icon-box" style="background: rgba(59,130,246,0.15); color: var(--blue);">👥</div>
+      <h3>Gestion de Leads</h3>
+      <p>Tabla completa con busqueda, filtros, creacion y edicion inline. Cada lead tiene 20+ campos de datos.</p>
+    </div>
+    <div class="feature-card">
+      <div class="accent-line" style="background: var(--orange);"></div>
+      <div class="icon-box" style="background: rgba(249,115,22,0.15); color: var(--orange);">📋</div>
+      <h3>Pipeline Visual</h3>
+      <p>Tablero Kanban con drag &amp; drop entre 4 etapas. Actualizacion optimista en Supabase en tiempo real.</p>
+    </div>
+    <div class="feature-card">
+      <div class="accent-line" style="background: var(--purple);"></div>
+      <div class="icon-box" style="background: rgba(168,85,247,0.15); color: var(--purple);">💬</div>
+      <h3>Conversaciones</h3>
+      <p>Interfaz tipo chat con historial completo. Distincion visual entre mensajes de IA, humano y prospecto.</p>
+    </div>
+    <div class="feature-card">
+      <div class="accent-line" style="background: var(--yellow);"></div>
+      <div class="icon-box" style="background: rgba(234,179,8,0.15); color: var(--yellow);">📈</div>
+      <h3>Analytics</h3>
+      <p>Metricas clave, grafico de nivel de interes, desglose por tipo de negocio, mensajes AI vs total.</p>
+    </div>
+    <div class="feature-card">
+      <div class="accent-line" style="background: var(--red);"></div>
+      <div class="icon-box" style="background: rgba(239,68,68,0.15); color: var(--red);">⚙️</div>
+      <h3>Settings</h3>
+      <p>Perfil con avatar, notificaciones configurables, automatizaciones AI, tema claro/oscuro, idioma ES/EN.</p>
+    </div>
+  </div>
+
+  <div class="page-num">02</div>
+  <div class="watermark">impulsa-pr</div>
+</div>
+
+<!-- ============ PAGE 3: DASHBOARD PRINCIPAL ============ -->
+<div class="page">
+  <div class="section-label">Modulo 1</div>
+  <h2>Dashboard Principal</h2>
+  <p class="subtitle">Centro de mando con metricas clave, tendencias y actividad reciente en una sola vista.</p>
+
+  <div class="grid-2">
+    <div>
+      <h3 style="font-size: 14px; margin-bottom: 14px; color: var(--green);">KPIs Primarios</h3>
+      <div class="grid-2" style="gap: 12px;">
+        <div class="stat-mini">
+          <div class="value" style="color: var(--green);">👥</div>
+          <div class="label">Total Leads</div>
+          <div style="font-size:10px; color: var(--green); margin-top:4px;">+ trend vs periodo anterior</div>
+        </div>
+        <div class="stat-mini">
+          <div class="value" style="color: var(--orange);">$</div>
+          <div class="label">Revenue</div>
+          <div style="font-size:10px; color: var(--green); margin-top:4px;">+ sparkline de 7 dias</div>
+        </div>
+        <div class="stat-mini">
+          <div class="value" style="color: var(--red);">✓</div>
+          <div class="label">Leads Cerrados</div>
+          <div style="font-size:10px; color: var(--green); margin-top:4px;">+ comparativa temporal</div>
+        </div>
+        <div class="stat-mini">
+          <div class="value" style="color: var(--blue);">%</div>
+          <div class="label">Tasa de Conversion</div>
+          <div style="font-size:10px; color: var(--green); margin-top:4px;">+ tendencia vs periodo</div>
+        </div>
+      </div>
+
+      <h3 style="font-size: 14px; margin: 18px 0 12px; color: var(--yellow);">Metricas Secundarias</h3>
+      <div class="grid-2" style="gap: 12px;">
+        <div class="stat-mini">
+          <div class="value" style="font-size: 20px;">⚡</div>
+          <div class="label">Pipeline Value</div>
+          <div style="font-size:10px; color: var(--muted); margin-top:4px;">Valor de leads abiertos</div>
+        </div>
+        <div class="stat-mini">
+          <div class="value" style="font-size: 20px;">🤖</div>
+          <div class="label">AI Response Rate</div>
+          <div style="font-size:10px; color: var(--muted); margin-top:4px;">% mensajes automaticos</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <h3 style="font-size: 14px; margin-bottom: 14px; color: var(--blue);">Funcionalidades Clave</h3>
+      <ul class="bullet-list">
+        <li>
+          <span class="check">✓</span>
+          <div><strong>Filtro Temporal</strong> &mdash; Hoy, 7 dias, 30 dias, Todo. Filtra todos los KPIs instantaneamente.</div>
+        </li>
+        <li>
+          <span class="check">✓</span>
+          <div><strong>Sparklines SVG</strong> &mdash; Mini-graficos de tendencia de 7 dias en cada tarjeta de estadisticas.</div>
+        </li>
+        <li>
+          <span class="check">✓</span>
+          <div><strong>Tendencias Comparativas</strong> &mdash; Calcula % de cambio vs periodo anterior automaticamente.</div>
+        </li>
+        <li>
+          <span class="check">✓</span>
+          <div><strong>Funnel de Conversion</strong> &mdash; Visualizacion de las 4 etapas con drop-rate entre cada una.</div>
+        </li>
+        <li>
+          <span class="check">✓</span>
+          <div><strong>Actividad Reciente</strong> &mdash; Los 6 leads mas recientes con tags AI/humano/nuevo.</div>
+        </li>
+        <li>
+          <span class="check">✓</span>
+          <div><strong>Hot Leads</strong> &mdash; Top 5 leads de alto interes que aun no estan cerrados.</div>
+        </li>
+        <li>
+          <span class="check">✓</span>
+          <div><strong>Saludo Contextual</strong> &mdash; Buenos dias/tardes/noches + nombre del usuario.</div>
+        </li>
+        <li>
+          <span class="check">✓</span>
+          <div><strong>Numeros Animados</strong> &mdash; Componente AnimatedNumber para transiciones suaves.</div>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="page-num">03</div>
+  <div class="watermark">impulsa-pr</div>
+</div>
+
+<!-- ============ PAGE 4: PIPELINE + LEADS ============ -->
+<div class="page">
+  <div class="section-label">Modulos 2 &amp; 3</div>
+  <h2>Pipeline Visual &amp; Gestion de Leads</h2>
+  <p class="subtitle">Kanban drag-and-drop y tabla avanzada para control total del ciclo de ventas.</p>
+
+  <div class="grid-2" style="gap: 32px;">
+    <!-- Pipeline -->
+    <div>
+      <h3 style="font-size: 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+        <span style="color: var(--orange);">📋</span> Pipeline Kanban
+      </h3>
+
+      <div style="margin-bottom: 16px;">
+        <div class="pipeline-bar" style="background: rgba(59,130,246,0.15); color: var(--blue); width: 100%;">
+          Nuevo
+          <span class="pipeline-label">Primer contacto</span>
+        </div>
+        <div class="pipeline-bar" style="background: rgba(234,179,8,0.15); color: var(--yellow); width: 80%;">
+          Contactado
+          <span class="pipeline-label">En conversacion</span>
+        </div>
+        <div class="pipeline-bar" style="background: rgba(249,115,22,0.15); color: var(--orange); width: 55%;">
+          Interesado
+          <span class="pipeline-label">Alta probabilidad</span>
+        </div>
+        <div class="pipeline-bar" style="background: rgba(0,204,106,0.15); color: var(--green); width: 30%;">
+          Cerrado
+          <span class="pipeline-label">Deal completado</span>
+        </div>
+      </div>
+
+      <ul class="bullet-list">
+        <li>
+          <span class="check">✓</span>
+          <div><strong>Drag &amp; Drop</strong> &mdash; Arrastra leads entre columnas con @dnd-kit. Actualizacion optimista.</div>
+        </li>
+        <li>
+          <span class="check">✓</span>
+          <div><strong>Valor por Etapa</strong> &mdash; Suma automatica del valor estimado de leads en cada columna.</div>
+        </li>
+        <li>
+          <span class="check">✓</span>
+          <div><strong>Click para Editar</strong> &mdash; Abre modal de edicion completa al hacer click en una tarjeta.</div>
+        </li>
+        <li>
+          <span class="check">✓</span>
+          <div><strong>Overlay de Drag</strong> &mdash; Preview visual al arrastrar con animacion suave de 200ms.</div>
+        </li>
+        <li>
+          <span class="check">✓</span>
+          <div><strong>Backend Supabase</strong> &mdash; Persistencia inmediata en base de datos al mover leads.</div>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Leads -->
+    <div>
+      <h3 style="font-size: 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+        <span style="color: var(--blue);">👥</span> Tabla de Leads
+      </h3>
+
+      <div class="feature-card" style="margin-bottom: 16px; padding: 18px;">
+        <h4 style="font-size: 13px; margin-bottom: 10px;">Campos por Lead (20+)</h4>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+          <span class="tag tag-green">Nombre</span>
+          <span class="tag tag-green">Telefono</span>
+          <span class="tag tag-green">Email</span>
+          <span class="tag tag-blue">Tipo Negocio</span>
+          <span class="tag tag-blue">Necesidad</span>
+          <span class="tag tag-orange">Estado</span>
+          <span class="tag tag-orange">Nivel Interes</span>
+          <span class="tag tag-purple">Valor Estimado</span>
+          <span class="tag tag-purple">Valor Real</span>
+          <span class="tag tag-green">Ubicacion</span>
+          <span class="tag tag-blue">Empleados</span>
+          <span class="tag tag-green">Sitio Web</span>
+          <span class="tag tag-orange">Origen</span>
+          <span class="tag tag-purple">Fuente</span>
+          <span class="tag tag-blue">Tags</span>
+          <span class="tag tag-green">Notas IA</span>
+          <span class="tag tag-orange">Etapa</span>
+        </div>
+      </div>
+
+      <ul class="bullet-list">
+        <li>
+          <span class="check">✓</span>
+          <div><strong>Crear Lead</strong> &mdash; Modal completo para agregar leads manualmente al CRM.</div>
+        </li>
+        <li>
+          <span class="check">✓</span>
+          <div><strong>Editar Lead</strong> &mdash; Modal de edicion con todos los campos disponibles.</div>
+        </li>
+        <li>
+          <span class="check">✓</span>
+          <div><strong>Leads Automaticos</strong> &mdash; Campo source diferencia leads manuales vs automatizados.</div>
+        </li>
+        <li>
+          <span class="check">✓</span>
+          <div><strong>Status Badges</strong> &mdash; Badges de color por estado y nivel de interes.</div>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="page-num">04</div>
+  <div class="watermark">impulsa-pr</div>
+</div>
+
+<!-- ============ PAGE 5: CONVERSATIONS + AI ============ -->
+<div class="page">
+  <div class="section-label">Modulo 4</div>
+  <h2>Conversaciones &amp; Inteligencia Artificial</h2>
+  <p class="subtitle">Chat en tiempo real con IA integrada que responde automaticamente y permite intervencion humana.</p>
+
+  <div class="grid-2" style="gap: 32px;">
+    <div>
+      <h3 style="font-size: 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+        <span style="color: var(--purple);">💬</span> Interfaz de Conversaciones
+      </h3>
+
+      <div class="feature-card" style="margin-bottom: 14px;">
+        <h4 style="font-size: 13px; margin-bottom: 8px;">Panel Izquierdo &mdash; Lista</h4>
+        <p style="font-size: 12px; color: var(--muted); line-height: 1.6;">
+          Lista scrollable de todas las conversaciones con leads. Muestra iniciales del contacto,
+          ultimo mensaje, tiempo relativo (min/h/d), y badge indicando si la IA o un humano
+          esta manejando la conversacion.
+        </p>
+      </div>
+
+      <div class="feature-card" style="margin-bottom: 14px;">
+        <h4 style="font-size: 13px; margin-bottom: 8px;">Panel Derecho &mdash; Chat</h4>
+        <p style="font-size: 12px; color: var(--muted); line-height: 1.6;">
+          Interfaz tipo messenger con burbujas diferenciadas por rol. Header con nombre,
+          tipo de negocio, estado AI/humano con indicador animado, y resumen de historial.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <h4 style="font-size: 13px; margin-bottom: 8px;">3 Tipos de Mensaje</h4>
+        <div style="display: flex; gap: 8px; margin-top: 8px;">
+          <div style="flex:1; padding: 10px; border-radius: 10px; background: rgba(255,255,255,0.04); font-size: 11px;">
+            <strong style="color: var(--muted);">Prospecto</strong>
+            <div style="color: var(--muted); margin-top: 4px;">Burbuja gris, alineado izquierda</div>
+          </div>
+          <div style="flex:1; padding: 10px; border-radius: 10px; background: rgba(0,204,106,0.08); font-size: 11px;">
+            <strong style="color: var(--green);">Bot / IA</strong>
+            <div style="color: var(--muted); margin-top: 4px;">Burbuja verde, icono bot</div>
+          </div>
+          <div style="flex:1; padding: 10px; border-radius: 10px; background: rgba(249,115,22,0.08); font-size: 11px;">
+            <strong style="color: var(--orange);">Humano</strong>
+            <div style="color: var(--muted); margin-top: 4px;">Burbuja naranja, icono user</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <h3 style="font-size: 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+        <span style="color: var(--green);">🤖</span> Capacidades de IA
+      </h3>
+
+      <div class="highlight-box" style="margin-bottom: 10px;">
+        <div class="num">1</div>
+        <div>
+          <h4>Auto-Respuesta 24/7</h4>
+          <p>El bot responde automaticamente a prospectos cuando humano_activo = false. Sin tiempos de espera.</p>
+        </div>
+      </div>
+      <div class="highlight-box" style="margin-bottom: 10px;">
+        <div class="num">2</div>
+        <div>
+          <h4>Resumen de Historial</h4>
+          <p>La IA genera un resumen automatico de cada conversacion (historial_resumen) visible en el header del chat.</p>
+        </div>
+      </div>
+      <div class="highlight-box" style="margin-bottom: 10px;">
+        <div class="num">3</div>
+        <div>
+          <h4>Notas Inteligentes</h4>
+          <p>Campo notas_ia con insights automaticos del prospecto generados por la IA durante la conversacion.</p>
+        </div>
+      </div>
+      <div class="highlight-box" style="margin-bottom: 10px;">
+        <div class="num">4</div>
+        <div>
+          <h4>Handoff AI ↔ Humano</h4>
+          <p>Toggle entre modo AI y humano. Indicador visual animado muestra quien controla la conversacion.</p>
+        </div>
+      </div>
+      <div class="highlight-box">
+        <div class="num">5</div>
+        <div>
+          <h4>AI Response Rate</h4>
+          <p>Metrica en dashboard que muestra % de mensajes manejados por IA vs total, con barra de progreso visual.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-num">05</div>
+  <div class="watermark">impulsa-pr</div>
+</div>
+
+<!-- ============ PAGE 6: ANALYTICS + SETTINGS ============ -->
+<div class="page">
+  <div class="section-label">Modulos 5 &amp; 6</div>
+  <h2>Analytics &amp; Configuracion</h2>
+  <p class="subtitle">Reportes avanzados y personalizacion completa de la plataforma.</p>
+
+  <div class="grid-2" style="gap: 32px;">
+    <!-- Analytics -->
+    <div>
+      <h3 style="font-size: 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+        <span style="color: var(--yellow);">📈</span> Analytics
+      </h3>
+
+      <div class="grid-2" style="gap: 10px; margin-bottom: 16px;">
+        <div class="stat-mini">
+          <div class="value" style="font-size: 18px;">💵</div>
+          <div class="label">Valor Promedio<br>de Deal</div>
+        </div>
+        <div class="stat-mini">
+          <div class="value" style="font-size: 18px;">📊</div>
+          <div class="label">Leads<br>Interesados</div>
+        </div>
+        <div class="stat-mini">
+          <div class="value" style="font-size: 18px;">🤖</div>
+          <div class="label">Mensajes<br>de IA</div>
+        </div>
+        <div class="stat-mini">
+          <div class="value" style="font-size: 18px;">💬</div>
+          <div class="label">Total<br>Mensajes</div>
+        </div>
+      </div>
+
+      <ul class="bullet-list">
+        <li>
+          <span class="check">✓</span>
+          <div><strong>Nivel de Interes</strong> &mdash; Grafico de barras (alto/medio/bajo) con alturas proporcionales.</div>
+        </li>
+        <li>
+          <span class="check">✓</span>
+          <div><strong>Tipos de Negocio</strong> &mdash; Top 6 tipos con barras de progreso y porcentajes.</div>
+        </li>
+        <li>
+          <span class="check">✓</span>
+          <div><strong>AI vs Total</strong> &mdash; Comparacion directa de mensajes automaticos vs manuales.</div>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Settings -->
+    <div>
+      <h3 style="font-size: 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+        <span style="color: var(--red);">⚙️</span> Configuracion
+      </h3>
+
+      <div class="feature-card" style="margin-bottom: 12px; padding: 16px;">
+        <h4 style="font-size: 12px; color: var(--green); margin-bottom: 8px;">PERFIL</h4>
+        <p style="font-size: 11px; color: var(--muted); line-height: 1.5;">
+          Avatar con upload/crop a 200x200 WebP, nombre, email, empresa. Foto con hover overlay para cambiar.
+        </p>
+      </div>
+
+      <div class="feature-card" style="margin-bottom: 12px; padding: 16px;">
+        <h4 style="font-size: 12px; color: var(--orange); margin-bottom: 8px;">NOTIFICACIONES (4 toggles)</h4>
+        <p style="font-size: 11px; color: var(--muted); line-height: 1.5;">
+          Nuevo lead &bull; Alertas IA &bull; Reportes semanales &bull; Deal cerrado. Cada uno con switch on/off.
+        </p>
+      </div>
+
+      <div class="feature-card" style="margin-bottom: 12px; padding: 16px;">
+        <h4 style="font-size: 12px; color: var(--purple); margin-bottom: 8px;">AUTOMATIZACIONES (3 toggles)</h4>
+        <p style="font-size: 11px; color: var(--muted); line-height: 1.5;">
+          Auto-respuesta IA &bull; Scoring automatico &bull; Recordatorios de follow-up. Persistidos en localStorage.
+        </p>
+      </div>
+
+      <div class="feature-card" style="margin-bottom: 12px; padding: 16px;">
+        <h4 style="font-size: 12px; color: var(--blue); margin-bottom: 8px;">APARIENCIA &amp; IDIOMA</h4>
+        <p style="font-size: 11px; color: var(--muted); line-height: 1.5;">
+          Tema Dark/Light con transicion suave &bull; Idioma Español/English &bull; Zona horaria AST/EST.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-num">06</div>
+  <div class="watermark">impulsa-pr</div>
+</div>
+
+<!-- ============ PAGE 7: TECH + UX ============ -->
+<div class="page">
+  <div class="section-label">Experiencia &amp; Tecnologia</div>
+  <h2>UX Premium &amp; Stack Tecnico</h2>
+  <p class="subtitle">Cada detalle del dashboard esta diseñado para ofrecer una experiencia profesional y fluida.</p>
+
+  <div class="grid-2" style="gap: 32px;">
+    <div>
+      <h3 style="font-size: 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+        <span>✨</span> Detalles de UX
+      </h3>
+
+      <div class="highlight-box" style="margin-bottom: 10px;">
+        <div class="num" style="background: var(--purple);">1</div>
+        <div>
+          <h4>Diseño B&amp;W Premium</h4>
+          <p>Sistema de diseño blanco y negro con acentos de color sutiles. Dark mode por defecto.</p>
+        </div>
+      </div>
+      <div class="highlight-box" style="margin-bottom: 10px;">
+        <div class="num" style="background: var(--blue);">2</div>
+        <div>
+          <h4>Micro-interacciones</h4>
+          <p>Hover con elevation (-translate-y), scale en click (0.98), transiciones de 200-300ms en todo.</p>
+        </div>
+      </div>
+      <div class="highlight-box" style="margin-bottom: 10px;">
+        <div class="num" style="background: var(--orange);">3</div>
+        <div>
+          <h4>Skeleton Loading</h4>
+          <p>Estados de carga con skeletons animados en cada pagina. Sin spinners genericos.</p>
+        </div>
+      </div>
+      <div class="highlight-box" style="margin-bottom: 10px;">
+        <div class="num" style="background: var(--green);">4</div>
+        <div>
+          <h4>Responsive Completo</h4>
+          <p>Sidebar colapsable en desktop, drawer mobile con overlay. Grids adaptativos en todas las paginas.</p>
+        </div>
+      </div>
+      <div class="highlight-box" style="margin-bottom: 10px;">
+        <div class="num" style="background: var(--yellow);">5</div>
+        <div>
+          <h4>Sistema de Toasts</h4>
+          <p>Notificaciones no-intrusivas para confirmar acciones y reportar errores.</p>
+        </div>
+      </div>
+      <div class="highlight-box">
+        <div class="num" style="background: var(--red);">6</div>
+        <div>
+          <h4>i18n Completo</h4>
+          <p>Todos los textos en Español e Ingles. Cambio instantaneo sin reload.</p>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <h3 style="font-size: 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+        <span>🛠</span> Stack Tecnico
+      </h3>
+
+      <div class="feature-card" style="margin-bottom: 12px; padding: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h4 style="font-size: 13px;">Frontend</h4>
+          <span class="tag tag-blue">Core</span>
+        </div>
+        <p style="font-size: 11px; color: var(--muted); margin-top: 6px; line-height: 1.5;">
+          Next.js &bull; React &bull; TypeScript &bull; Tailwind CSS &bull; Lucide Icons
+        </p>
+      </div>
+
+      <div class="feature-card" style="margin-bottom: 12px; padding: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h4 style="font-size: 13px;">Backend &amp; Data</h4>
+          <span class="tag tag-green">Database</span>
+        </div>
+        <p style="font-size: 11px; color: var(--muted); margin-top: 6px; line-height: 1.5;">
+          Supabase (PostgreSQL) &bull; Auth integrado &bull; Row Level Security &bull; Real-time
+        </p>
+      </div>
+
+      <div class="feature-card" style="margin-bottom: 12px; padding: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h4 style="font-size: 13px;">Interacciones</h4>
+          <span class="tag tag-orange">UX</span>
+        </div>
+        <p style="font-size: 11px; color: var(--muted); margin-top: 6px; line-height: 1.5;">
+          @dnd-kit (drag &amp; drop) &bull; Animated Numbers &bull; SVG Sparklines &bull; CSS transitions
+        </p>
+      </div>
+
+      <div class="feature-card" style="margin-bottom: 12px; padding: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h4 style="font-size: 13px;">Autenticacion</h4>
+          <span class="tag tag-purple">Auth</span>
+        </div>
+        <p style="font-size: 11px; color: var(--muted); margin-top: 6px; line-height: 1.5;">
+          Supabase Auth &bull; Login / Signup &bull; Sesiones persistentes &bull; Rutas protegidas
+        </p>
+      </div>
+
+      <div class="feature-card" style="padding: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h4 style="font-size: 13px;">Arquitectura</h4>
+          <span class="tag tag-green">Patterns</span>
+        </div>
+        <p style="font-size: 11px; color: var(--muted); margin-top: 6px; line-height: 1.5;">
+          App Router &bull; Client Components &bull; Custom Hooks &bull; Optimistic UI &bull; localStorage cache
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-num">07</div>
+  <div class="watermark">impulsa-pr</div>
+</div>
+
+<!-- ============ PAGE 8: CLOSING ============ -->
+<div class="page cover">
+  <div class="logo-text" style="font-size: 40px;">Impulsa PR</div>
+  <div class="tagline">Automatiza. Convierte. Escala.</div>
+  <div class="divider"></div>
+
+  <div style="max-width: 500px; margin: 0 auto;">
+    <div class="grid-3" style="gap: 16px; margin-top: 24px;">
+      <div class="stat-mini">
+        <div class="value" style="font-size: 22px; color: var(--green);">6</div>
+        <div class="label">Modulos<br>completos</div>
+      </div>
+      <div class="stat-mini">
+        <div class="value" style="font-size: 22px; color: var(--blue);">20+</div>
+        <div class="label">Campos<br>por lead</div>
+      </div>
+      <div class="stat-mini">
+        <div class="value" style="font-size: 22px; color: var(--orange);">AI</div>
+        <div class="label">Respuesta<br>24/7</div>
+      </div>
+    </div>
+
+    <div style="margin-top: 32px; padding: 20px; border-radius: 16px; border: 1px solid var(--border); background: var(--card);">
+      <p style="font-size: 13px; color: var(--muted); line-height: 1.7; text-align: center;">
+        Dashboard CRM con inteligencia artificial integrada, diseñado para negocios que quieren
+        automatizar su proceso de ventas y maximizar la conversion de prospectos a clientes.
+      </p>
+    </div>
+  </div>
+
+  <p class="meta" style="margin-top: 32px; opacity: 0.4; font-size: 11px;">
+    Powered by Impulsa PR &bull; Next.js &bull; Supabase &bull; AI
+  </p>
+
+  <div class="watermark">impulsa-pr &bull; abril 2026</div>
+</div>
+
+</body>
+</html>

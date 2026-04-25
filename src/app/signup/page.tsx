@@ -1,25 +1,67 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { getSupabase } from '@/lib/supabase'
-import { useRouter } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Logo } from '@/components/ui/logo'
-import { Loader2, Mail, Lock, User, ArrowRight } from 'lucide-react'
+import { Loader2, Mail, Lock, User, ArrowRight, ShieldAlert } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n'
 
-export default function SignupPage() {
+export default function SignupPageWrapper() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-muted" /></div>}>
+      <SignupPage />
+    </Suspense>
+  )
+}
+
+type InviteState =
+  | { status: 'checking' }
+  | { status: 'invalid'; reason: string }
+  | { status: 'valid'; token: string; email: string | null; nombre: string | null; empresa: string | null }
+
+function SignupPage() {
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
-  const router = useRouter()
   const { t } = useTranslation()
+  const searchParams = useSearchParams()
+
+  const [invite, setInvite] = useState<InviteState>({ status: 'checking' })
+
+  useEffect(() => {
+    const token = searchParams.get('invite')
+    if (!token) {
+      setInvite({ status: 'invalid', reason: 'Necesitas una invitación para crear una cuenta.' })
+      return
+    }
+    (async () => {
+      const supabase = getSupabase()
+      const { data, error } = await supabase.rpc('validate_invite', { p_token: token })
+      const row = Array.isArray(data) ? data[0] : null
+      if (error || !row || !row.valid) {
+        setInvite({ status: 'invalid', reason: 'Invitación inválida, expirada o ya utilizada.' })
+        return
+      }
+      setInvite({
+        status: 'valid',
+        token,
+        email: row.email ?? null,
+        nombre: row.nombre ?? null,
+        empresa: row.empresa ?? null,
+      })
+      if (row.email) setEmail(row.email)
+      if (row.nombre) setFullName(row.nombre)
+    })()
+  }, [searchParams])
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (invite.status !== 'valid') return
     setLoading(true)
     setError('')
 
@@ -28,7 +70,7 @@ export default function SignupPage() {
       email,
       password,
       options: {
-        data: { full_name: fullName },
+        data: { full_name: fullName, invite_token: invite.token },
       },
     })
 
@@ -50,7 +92,20 @@ export default function SignupPage() {
           auth_user_id: authData.user.id,
           email,
           nombre: fullName,
+          empresa: invite.empresa,
         })
+      }
+
+      // Consume invite atómicamente (RPC hace la validación + update en una operación)
+      const { data: consumed } = await supabase.rpc('consume_invite', {
+        p_token: invite.token,
+        p_user_id: authData.user.id,
+      })
+      if (!consumed) {
+        // Race condition: token usado entre validate y consume — aborta el signup
+        setError('La invitación ya fue utilizada. Contacta soporte.')
+        setLoading(false)
+        return
       }
     }
 
@@ -60,15 +115,14 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen bg-background flex">
-      {/* Left panel - branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-card border-r border-border flex-col items-center justify-center p-12 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_40%,rgba(255,255,255,0.03),transparent_70%)]" />
-        <div className="relative z-10 flex flex-col items-center text-center max-w-md">
+      {/* Left panel — navy dominant brand anchor */}
+      <div className="section-navy hidden lg:flex lg:w-1/2 flex-col items-center justify-center p-12">
+        <div className="flex flex-col items-center text-center max-w-md">
           <Logo size="large" />
-          <h2 className="text-2xl font-bold mt-8 tracking-tight">
-            Business Automation
+          <h2 className="font-display text-4xl mt-8 tracking-tight text-white leading-[1.05]">
+            Business <span className="italic text-[#eab308]">automation</span>
           </h2>
-          <p className="text-muted mt-3 text-sm leading-relaxed">
+          <p className="text-white/70 mt-4 text-sm leading-relaxed">
             Automatiza tus conversaciones, gestiona tus leads y escala tu negocio con inteligencia artificial.
           </p>
         </div>
@@ -81,7 +135,38 @@ export default function SignupPage() {
             <Logo size="large" />
           </div>
 
-          {success ? (
+          {invite.status === 'checking' ? (
+            <div className="text-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin mx-auto text-muted" />
+              <p className="text-sm text-muted mt-3">Validando invitación…</p>
+            </div>
+          ) : invite.status === 'invalid' ? (
+            <div className="text-center py-4">
+              <div className="w-12 h-12 rounded-full bg-accent-red/10 border border-accent-red/20 flex items-center justify-center mx-auto mb-4">
+                <ShieldAlert className="w-6 h-6 text-accent-red" />
+              </div>
+              <h2 className="text-lg font-bold">Registro por invitación</h2>
+              <p className="text-sm text-muted mt-2 leading-relaxed">
+                {invite.reason} Contacta a Impulsa PR si necesitas acceso.
+              </p>
+              <div className="flex flex-col gap-2 mt-6">
+                <Link
+                  href="/login"
+                  className="inline-flex items-center justify-center gap-1 text-sm text-foreground font-medium hover:underline"
+                >
+                  Ir a iniciar sesión <ArrowRight className="w-3 h-3" />
+                </Link>
+                <a
+                  href="https://wa.me/19399052410?text=Hola!%20Quiero%20acceso%20al%20dashboard%20de%20Impulsa%20PR."
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-muted hover:text-foreground transition-colors"
+                >
+                  Solicitar acceso por WhatsApp
+                </a>
+              </div>
+            </div>
+          ) : success ? (
             <div className="text-center py-4">
               <div className="w-12 h-12 rounded-full bg-foreground/10 flex items-center justify-center mx-auto mb-4">
                 <Mail className="w-6 h-6 text-foreground" />
@@ -106,13 +191,16 @@ export default function SignupPage() {
                 </p>
               </div>
 
-              <form onSubmit={handleSignup} className="space-y-4">
+              <form onSubmit={handleSignup} method="post" className="space-y-4">
                 <div>
-                  <label className="text-xs text-muted mb-1.5 block font-medium">{t('auth.fullName')}</label>
+                  <label htmlFor="fullName" className="text-xs text-muted mb-1.5 block font-medium">{t('auth.fullName')}</label>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
                     <input
                       type="text"
+                      name="fullName"
+                      id="fullName"
+                      autoComplete="name"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       placeholder={t('auth.fullNamePlaceholder')}
@@ -123,11 +211,14 @@ export default function SignupPage() {
                 </div>
 
                 <div>
-                  <label className="text-xs text-muted mb-1.5 block font-medium">{t('auth.email')}</label>
+                  <label htmlFor="email" className="text-xs text-muted mb-1.5 block font-medium">{t('auth.email')}</label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
                     <input
                       type="email"
+                      name="email"
+                      id="email"
+                      autoComplete="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="you@company.com"
@@ -138,11 +229,14 @@ export default function SignupPage() {
                 </div>
 
                 <div>
-                  <label className="text-xs text-muted mb-1.5 block font-medium">{t('auth.password')}</label>
+                  <label htmlFor="password" className="text-xs text-muted mb-1.5 block font-medium">{t('auth.password')}</label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
                     <input
                       type="password"
+                      name="password"
+                      id="password"
+                      autoComplete="new-password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder={t('auth.passwordPlaceholder')}

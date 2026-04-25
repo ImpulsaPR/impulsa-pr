@@ -1,33 +1,38 @@
 'use client'
 
-import { Bell, Search, LogOut, Moon, Sun, Globe, X } from 'lucide-react'
-import { useState, useEffect, useRef } from 'react'
+import { Bell, Search, LogOut, Moon, Sun, Globe } from 'lucide-react'
+import { useState, useEffect } from 'react'
 import { getSupabase } from '@/lib/supabase'
 import { useRouter, usePathname } from 'next/navigation'
 import { useCliente } from '@/hooks/use-cliente'
 import { useAvatar } from '@/hooks/use-avatar'
 import { useTheme } from '@/lib/theme'
 import { useTranslation } from '@/lib/i18n'
+import { CommandSearch } from './command-search'
+import { NotificationPanel } from './notification-panel'
+import { useNotifications } from '@/hooks/use-notifications'
 import type { Locale } from '@/lib/i18n'
 
 const breadcrumbMap: Record<string, string> = {
   '/': 'Dashboard',
+  '/analytics': 'Analytics',
   '/leads': 'Leads',
   '/pipeline': 'Pipeline',
   '/conversations': 'Conversations',
-  '/analytics': 'Analytics',
+  '/soporte': 'Support',
   '/settings': 'Settings',
 }
 
 export function Topbar() {
   const [searchOpen, setSearchOpen] = useState(false)
-  const searchRef = useRef<HTMLInputElement>(null)
+  const [notifOpen, setNotifOpen] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
   const { cliente } = useCliente()
   const { avatarUrl } = useAvatar()
   const { theme, toggleTheme } = useTheme()
   const { locale, setLocale, t } = useTranslation()
+  const { items: notifItems, unreadCount, markAsRead, markAllAsRead } = useNotifications()
 
   const initials = cliente?.nombre
     ? cliente.nombre.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
@@ -44,17 +49,12 @@ export function Topbar() {
       }
       if (e.key === 'Escape') {
         setSearchOpen(false)
+        setNotifOpen(false)
       }
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
   }, [])
-
-  useEffect(() => {
-    if (searchOpen && searchRef.current) {
-      searchRef.current.focus()
-    }
-  }, [searchOpen])
 
   const handleLogout = async () => {
     await getSupabase().auth.signOut()
@@ -78,35 +78,20 @@ export function Topbar() {
             <span className="text-foreground font-medium">{currentPage}</span>
           </div>
 
-          {/* Search */}
+          {/* Search trigger */}
           <div className="flex items-center max-w-md ml-auto sm:ml-4">
-            {searchOpen ? (
-              <div className="flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 w-64 sm:w-80">
-                <Search className="w-4 h-4 text-muted flex-shrink-0" />
-                <input
-                  ref={searchRef}
-                  type="text"
-                  placeholder={t('topbar.search')}
-                  className="bg-transparent text-sm text-foreground placeholder:text-muted outline-none w-full"
-                  onBlur={() => setSearchOpen(false)}
-                />
-                <button onClick={() => setSearchOpen(false)} className="text-muted hover:text-foreground">
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => setSearchOpen(true)}
-                className="flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-muted hover:text-foreground hover:border-border-hover transition-all"
-              >
-                <Search className="w-4 h-4 flex-shrink-0" />
-                <span className="text-xs hidden sm:inline">{t('topbar.searchShort')}</span>
-                <kbd className="hidden sm:inline-flex items-center gap-0.5 rounded border border-border bg-background px-1 py-0.5 text-[10px] text-muted ml-2">
-                  <span>Ctrl</span>
-                  <span>K</span>
-                </kbd>
-              </button>
-            )}
+            <button
+              onClick={() => setSearchOpen(true)}
+              aria-label={t('topbar.searchShort')}
+              className="flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-muted hover:text-foreground hover:border-border-hover transition-all"
+            >
+              <Search className="w-4 h-4 flex-shrink-0" />
+              <span className="text-xs hidden sm:inline">{t('topbar.searchShort')}</span>
+              <kbd className="hidden sm:inline-flex items-center gap-0.5 rounded border border-border bg-background px-1 py-0.5 text-[10px] text-muted ml-2">
+                <span>Ctrl</span>
+                <span>K</span>
+              </kbd>
+            </button>
           </div>
         </div>
 
@@ -116,7 +101,8 @@ export function Topbar() {
           <button
             onClick={handleLocaleToggle}
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl hover:bg-border/40 text-muted hover:text-foreground transition-all duration-200 text-xs font-medium"
-            title={locale === 'en' ? 'Switch to Spanish' : 'Cambiar a Ingles'}
+            aria-label={locale === 'en' ? 'Switch to Spanish' : 'Cambiar a Inglés'}
+            title={locale === 'en' ? 'Switch to Spanish' : 'Cambiar a Inglés'}
           >
             <Globe className="w-4 h-4" />
             <span className="hidden sm:inline uppercase">{locale}</span>
@@ -126,6 +112,7 @@ export function Topbar() {
           <button
             onClick={toggleTheme}
             className="p-2 rounded-xl hover:bg-border/40 text-muted hover:text-foreground transition-all duration-200"
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
           >
             {theme === 'dark' ? (
@@ -136,10 +123,28 @@ export function Topbar() {
           </button>
 
           {/* Notifications */}
-          <button className="relative p-2 rounded-xl hover:bg-border/40 text-muted hover:text-foreground transition-colors">
-            <Bell className="w-5 h-5" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-foreground rounded-full" />
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setNotifOpen((p) => !p)}
+              className="relative p-2 rounded-xl hover:bg-border/40 text-muted hover:text-foreground transition-colors"
+              aria-label={t('notif.title')}
+            >
+              <Bell className="w-5 h-5" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 inline-flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full bg-accent-red text-white text-[9px] font-bold tabular-nums shadow ring-2 ring-background">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </button>
+            <NotificationPanel
+              open={notifOpen}
+              onClose={() => setNotifOpen(false)}
+              items={notifItems}
+              unreadCount={unreadCount}
+              onMarkRead={markAsRead}
+              onMarkAllRead={markAllAsRead}
+            />
+          </div>
 
           {/* User avatar */}
           <div className="flex items-center gap-2 pl-2.5 ml-1 border-l border-border">
@@ -152,6 +157,7 @@ export function Topbar() {
             </div>
             <button
               onClick={handleLogout}
+              aria-label={t('auth.signOut')}
               className="p-2 rounded-xl hover:bg-border/40 text-muted hover:text-foreground transition-colors"
               title={t('auth.signOut')}
             >
@@ -160,6 +166,7 @@ export function Topbar() {
           </div>
         </div>
       </div>
+      <CommandSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
     </header>
   )
 }

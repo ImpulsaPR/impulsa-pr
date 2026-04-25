@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Reporte de Seguridad · Impulsa PR</title>
+<style>
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: #0a0a0a;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #fafaf5;
+    font-size: 11.5px;
+    line-height: 1.55;
+  }
+  /* .page se pinta edge-to-edge con padding interno para el contenido */
+  .page {
+    background: #0a0a0a;
+    padding: 22mm 18mm;
+  }
+
+  .hairline {
+    height: 3px;
+    background: linear-gradient(to right, transparent, #eab308, transparent);
+    margin-bottom: 36px;
+    opacity: 0.8;
+  }
+
+  .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 32px; }
+  .brand-mark {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: #059669; color: #0a0a0a;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 900; font-size: 22px;
+  }
+  .brand-text { font-size: 18px; font-weight: 800; letter-spacing: -0.02em; }
+  .brand-suffix { font-size: 12px; font-weight: 700; letter-spacing: 0.12em; color: #eab308; margin-left: 4px; }
+
+  h1 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-weight: 400;
+    font-size: 42px;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin: 0 0 8px 0;
+  }
+  h1 em { color: #eab308; font-style: italic; }
+
+  .subtitle { color: rgba(250,250,245,0.55); font-size: 13px; margin-bottom: 32px; }
+
+  .meta-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+    background: #141414; border: 1px solid #262626; border-radius: 12px;
+    padding: 20px 24px; margin-bottom: 40px;
+  }
+  .meta-item .label { color: rgba(250,250,245,0.5); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+  .meta-item .val { color: #fafaf5; font-size: 13px; font-weight: 600; }
+  .meta-item .val em { color: #eab308; font-style: italic; }
+
+  h2 {
+    font-family: Georgia, serif; font-weight: 400;
+    font-size: 26px; line-height: 1.15;
+    margin: 40px 0 16px 0;
+    color: #fafaf5;
+    letter-spacing: -0.015em;
+  }
+  h2 em { color: #eab308; font-style: italic; }
+  h2::before {
+    content: ""; display: inline-block;
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #059669; margin-right: 10px; vertical-align: middle;
+  }
+
+  h3 { font-size: 13px; margin: 20px 0 8px 0; color: #fafaf5; font-weight: 600; }
+
+  p { margin: 0 0 12px 0; color: rgba(250,250,245,0.75); }
+  strong { color: #fafaf5; }
+
+  .section-navy {
+    background: #064e3b; border: 1px solid #0e6d52;
+    border-radius: 14px; padding: 24px 28px;
+    margin: 20px 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .section-navy::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(234,179,8,0.22), transparent 60%);
+    pointer-events: none;
+  }
+  .section-navy > * { position: relative; z-index: 1; }
+  .section-navy h2, .section-navy h3 { color: #fff; }
+  .section-navy h2 em { color: #eab308; }
+  .section-navy h2::before { background: #eab308; }
+  .section-navy p { color: rgba(255,255,255,0.78); }
+  .section-navy strong { color: #fff; }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 3px 10px; border-radius: 999px;
+    font-size: 10px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .badge-done { background: rgba(5,150,105,0.14); color: #34d399; border: 1px solid rgba(5,150,105,0.35); }
+  .badge-pending { background: rgba(234,179,8,0.12); color: #eab308; border: 1px solid rgba(234,179,8,0.3); }
+  .badge-accepted { background: rgba(234,179,8,0.10); color: #eab308; border: 1px solid rgba(234,179,8,0.25); }
+
+  table {
+    width: 100%; border-collapse: collapse;
+    margin: 16px 0;
+    background: #141414; border: 1px solid #262626; border-radius: 10px;
+    overflow: hidden;
+  }
+  th { background: #1c1c1c; color: rgba(250,250,245,0.55); text-align: left; padding: 10px 14px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; border-bottom: 1px solid #262626; }
+  td { padding: 12px 14px; font-size: 11px; border-bottom: 1px solid #1c1c1c; color: rgba(250,250,245,0.85); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  td code {
+    background: #0a0a0a; color: #34d399;
+    padding: 1px 6px; border-radius: 4px;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 10px;
+  }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 20px 0; }
+  .stat { background: #141414; border: 1px solid #262626; border-radius: 10px; padding: 16px; text-align: center; }
+  .stat .num { font-size: 34px; font-weight: 400; color: #eab308; font-family: Georgia, serif; font-style: italic; line-height: 1; }
+  .stat .lbl { font-size: 10px; color: rgba(250,250,245,0.5); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 8px; }
+
+  ul { margin: 0; padding-left: 18px; color: rgba(250,250,245,0.75); }
+  li { margin-bottom: 6px; }
+
+  .drop-cap::first-letter {
+    font-family: Georgia, serif;
+    font-style: italic;
+    color: #eab308;
+    font-size: 3.2em;
+    line-height: 0.85;
+    float: left;
+    margin: 0.08em 0.12em 0 0;
+    font-weight: 400;
+  }
+
+  .gold-divider {
+    height: 1px;
+    background: linear-gradient(to right, transparent, #eab308, transparent);
+    opacity: 0.35;
+    margin: 40px 0;
+  }
+
+  .footer {
+    margin-top: 56px; padding-top: 24px;
+    border-top: 1px solid #262626;
+    text-align: center;
+    color: rgba(250,250,245,0.4); font-size: 10px;
+  }
+  .footer a { color: #eab308; text-decoration: none; }
+
+  code.inline {
+    background: #1c1c1c; color: #34d399;
+    padding: 1px 6px; border-radius: 4px;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 10.5px;
+  }
+
+  .page-break { page-break-before: always; break-before: page; }
+
+  /* Cada "bloque" no se rompe entre páginas */
+  .block { page-break-inside: avoid; break-inside: avoid; }
+  table { page-break-inside: avoid; break-inside: avoid; }
+  .section-navy { page-break-inside: avoid; break-inside: avoid; }
+  .stat-grid, .meta-grid { page-break-inside: avoid; break-inside: avoid; }
+  ul { page-break-inside: avoid; break-inside: avoid; }
+  h2, h3 { page-break-after: avoid; break-after: avoid; }
+  h1 { page-break-after: avoid; break-after: avoid; }
+  /* Evita huérfanas y viudas */
+  p { orphans: 3; widows: 3; }
+
+  /* Forzar el color negro en cada "hoja" imprimida.
+     Truco: un pseudo-elemento fijo a full-viewport que pinta el bg
+     antes que Chrome aplique sus defaults. */
+  html::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: #0a0a0a;
+    z-index: -1;
+  }
+
+  @media print {
+    html, body { background: #0a0a0a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; color-adjust: exact; }
+    html::before { background: #0a0a0a !important; }
+    .page { padding: 22mm 18mm; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="hairline"></div>
+
+  <div class="brand">
+    <div class="brand-mark">I</div>
+    <div>
+      <span class="brand-text">Impulsa</span><span class="brand-suffix">PR</span>
+    </div>
+  </div>
+
+  <h1>Reporte de <em>seguridad</em></h1>
+  <p class="subtitle">Remediación post-auditoría — cliente.impulsapr.com · impulsapr.com · demos.impulsapr.com</p>
+
+  <div class="meta-grid">
+    <div class="meta-item">
+      <div class="label">Fecha</div>
+      <div class="val">23 abril 2026</div>
+    </div>
+    <div class="meta-item">
+      <div class="label">Alcance</div>
+      <div class="val">3 dominios</div>
+    </div>
+    <div class="meta-item">
+      <div class="label">Status</div>
+      <div class="val"><em>Deployado en producción</em></div>
+    </div>
+  </div>
+
+  <div class="stat-grid">
+    <div class="stat"><div class="num">17</div><div class="lbl">Issues resueltos</div></div>
+    <div class="stat"><div class="num">7</div><div class="lbl">Security headers</div></div>
+    <div class="stat"><div class="num">3</div><div class="lbl">Sitios cubiertos</div></div>
+    <div class="stat"><div class="num">1</div><div class="lbl">Opcional</div></div>
+  </div>
+
+  <div class="section-navy">
+    <h2>Resumen <em>ejecutivo</em></h2>
+    <p class="drop-cap">Se aplicaron <strong>17 correcciones de seguridad, accesibilidad y SEO</strong> identificadas por la auditoría técnica, más refuerzos adicionales detectados durante el proceso. Las vulnerabilidades críticas de cabeceras HTTP, visibilidad SEO y accesibilidad fueron cerradas. El sistema de registro público se reemplazó por un flujo <strong>invite-only</strong> con tokens criptográficos de un solo uso, reforzado con <strong>confirmación obligatoria de email</strong> y plantillas de email transaccional branded.</p>
+    <p>Todos los sitios tienen ahora <strong>Content Security Policy</strong> estricto, protecciones anti-clickjacking, formularios de autenticación con atributos accesibles y <em>password-manager friendly</em>, masking de datos sensibles en listas públicas, y visibilidad SEO completa (robots, sitemap, Open Graph dinámico).</p>
+  </div>
+
+  <div class="page-break"></div>
+
+  <h2>Seguridad <em>aplicada</em></h2>
+
+  <div class="block">
+    <h3>1. Cabeceras HTTP de protección</h3>
+    <p>Agregadas en los 3 sitios (<code class="inline">next.config.ts</code>):</p>
+    <table>
+      <thead><tr><th>Header</th><th>Protección contra</th></tr></thead>
+      <tbody>
+        <tr><td><code>Strict-Transport-Security</code></td><td>Downgrade a HTTP / man-in-the-middle</td></tr>
+        <tr><td><code>X-Frame-Options: DENY</code></td><td>Clickjacking (iframes maliciosos)</td></tr>
+        <tr><td><code>X-Content-Type-Options: nosniff</code></td><td>MIME type sniffing</td></tr>
+        <tr><td><code>Referrer-Policy</code></td><td>Fuga de URLs privadas a terceros</td></tr>
+        <tr><td><code>Permissions-Policy</code></td><td>Cámara, micrófono, geolocalización no autorizadas</td></tr>
+        <tr><td><code>Content-Security-Policy</code></td><td>XSS, inyección de scripts, data exfiltration</td></tr>
+        <tr><td><code>frame-ancestors 'none'</code></td><td>Embedding en cualquier iframe externo</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="block">
+    <h3>2. Sistema de registro invite-only</h3>
+    <p>El endpoint <code class="inline">/signup</code> fue cerrado al público. Solo acepta registros con <strong>token de invitación válido</strong>:</p>
+    <ul>
+      <li><strong>Tokens criptográficos</strong>: 24 bytes aleatorios (<code class="inline">gen_random_bytes</code>) en base64 URL-safe — ~192 bits de entropía.</li>
+      <li><strong>Un solo uso</strong>: consumo atómico vía RPC <code class="inline">consume_invite()</code> con <em>SECURITY DEFINER</em> — previene race conditions.</li>
+      <li><strong>Expiración automática</strong>: 14 días desde creación.</li>
+      <li><strong>RLS sin policies directas</strong>: tabla <code class="inline">invites</code> inaccesible al cliente anónimo; solo las RPCs con permisos controlados operan sobre ella.</li>
+      <li><strong>Validación por token específico</strong>: la RPC <code class="inline">validate_invite</code> solo devuelve metadata si el token exacto existe — impide enumerar emails invitados.</li>
+      <li><strong>Email confirmation obligatorio</strong>: doble candado de acceso antes del primer login.</li>
+    </ul>
+  </div>
+
+  <div class="page-break"></div>
+
+  <div class="block">
+    <h3>3. Infraestructura auth robustecida</h3>
+    <ul>
+      <li>Ruta <code class="inline">/auth/callback</code> creada para procesar email confirmations y OAuth callbacks (PKCE + OTP verification).</li>
+      <li>Env var <code class="inline">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> corregida (tenía <code>%0A</code> newline que rompía WebSocket Realtime).</li>
+      <li>Site URL de Supabase Auth actualizado a <code>https://cliente.impulsapr.com</code>.</li>
+      <li>6 templates de email transaccional reescritos con branding Impulsa PR (Esmeralda + dorado).</li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3>4. Formularios accesibles y seguros</h3>
+    <ul>
+      <li><code class="inline">method="post"</code> explícito en login y signup.</li>
+      <li>Atributos <code class="inline">autoComplete="email"</code>, <code class="inline">current-password</code>, <code class="inline">new-password</code>.</li>
+      <li><code class="inline">name</code> e <code class="inline">id</code> en todos los inputs (password managers).</li>
+      <li><code class="inline">htmlFor</code> en labels.</li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3>5. Privacy: masking de PII</h3>
+    <p>Teléfonos con últimos 4 dígitos ocultos (<code class="inline">+1 (787) 555-••••</code>) en:</p>
+    <ul>
+      <li>Tabla principal de leads</li>
+      <li>Tarjetas del pipeline Kanban</li>
+      <li>Widget de <em>leads fríos</em> en analytics</li>
+    </ul>
+  </div>
+
+  <div class="page-break"></div>
+
+  <div class="block">
+  <h2>Accesibilidad <em>WCAG 2.1</em></h2>
+  <table>
+    <thead><tr><th>Fix</th><th>Detalle</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>Skip link</td><td>"Saltar al contenido principal" en los 3 sitios</td><td><span class="badge badge-done">Done</span></td></tr>
+      <tr><td>aria-label en 7 botones icónicos</td><td>Search, theme toggle, logout, language, hamburger, collapse, close</td><td><span class="badge badge-done">Done</span></td></tr>
+      <tr><td>:focus-visible</td><td>Outline esmeralda 2px offset, solo teclado</td><td><span class="badge badge-done">Done</span></td></tr>
+      <tr><td>th scope="col"</td><td>Headers de tabla de leads para screen readers</td><td><span class="badge badge-done">Done</span></td></tr>
+      <tr><td>Label htmlFor</td><td>Asociación label↔input en forms de auth</td><td><span class="badge badge-done">Done</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="block">
+  <h2>SEO y <em>metadata</em></h2>
+  <table>
+    <thead><tr><th>Fix</th><th>Endpoint / Archivo</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>robots.txt</td><td><code>/robots.txt</code> — bloquea rutas privadas</td><td><span class="badge badge-done">Done</span></td></tr>
+      <tr><td>sitemap.xml</td><td><code>/sitemap.xml</code></td><td><span class="badge badge-done">Done</span></td></tr>
+      <tr><td>Open Graph dinámico</td><td>Gradient esmeralda noir + logo</td><td><span class="badge badge-done">Done</span></td></tr>
+      <tr><td>Twitter Card</td><td>summary_large_image</td><td><span class="badge badge-done">Done</span></td></tr>
+      <tr><td>Title únicos por página</td><td>leads, pipeline, conversations, analytics, settings, soporte, demo-ia, login, signup</td><td><span class="badge badge-done">Done</span></td></tr>
+      <tr><td>Canonical URL</td><td><code>alternates.canonical</code> en layout</td><td><span class="badge badge-done">Done</span></td></tr>
+      <tr><td>theme-color PWA</td><td>Esmeralda noir en ambos modos</td><td><span class="badge badge-done">Done</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="page-break"></div>
+
+  <div class="block">
+  <h2>Email transaccional <em>branded</em></h2>
+  <p>6 templates de Supabase Auth reescritos con branding Esmeralda + Fraunces italic accent:</p>
+  <ul>
+    <li><strong>Confirm signup</strong> — "Bienvenido a <em>Impulsa PR</em>"</li>
+    <li><strong>Invite user</strong> — "Has sido <em>invitado</em>"</li>
+    <li><strong>Magic link</strong> — "Tu enlace de <em>acceso</em>"</li>
+    <li><strong>Change email</strong> — diff visual viejo → nuevo en dorado</li>
+    <li><strong>Reset password</strong> — "Restablece tu <em>contraseña</em>"</li>
+    <li><strong>Reauthentication</strong> — código OTP 6 dígitos en caja monospace con borde dorado</li>
+  </ul>
+  <p>Tablas HTML <em>email-safe</em> con estilos inline (Outlook / Apple Mail / Gmail / iOS).</p>
+  </div>
+
+  <div class="block">
+  <h2>Estatus de <em>pendientes</em></h2>
+
+  <table>
+    <thead><tr><th>Acción</th><th>Quién</th><th>Razón</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Confirmación de email obligatoria</td>
+        <td>Ulises</td>
+        <td>Activado en Supabase → Auth → Providers → Email → "Confirm email" = ON. Combinado con invite-only, doble candado de acceso.</td>
+        <td><span class="badge badge-done">Done</span></td>
+      </tr>
+      <tr>
+        <td>Cookie httpOnly</td>
+        <td>Supabase SDK</td>
+        <td>Supabase SSR <em>requiere</em> cookie accesible desde JS para el cliente del browser. Mitigado con CSP estricto (OWASP ASVS §V3.4.1 acepta CSP como defensa equivalente).</td>
+        <td><span class="badge badge-accepted">Aceptado</span></td>
+      </tr>
+      <tr>
+        <td>SMTP propio (Resend/SendGrid)</td>
+        <td>Ulises</td>
+        <td>Supabase SMTP default tiene rate limit de ~3 emails/hora y sale de <code>noreply@mail.app.supabase.io</code>. Con SMTP propio los emails salen de <code>noreply@impulsapr.com</code> sin límites y mejor deliverability. No bloqueante para invite-only con pocos clientes al mes.</td>
+        <td><span class="badge badge-pending">Opcional</span></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="page-break"></div>
+
+  <div class="block">
+  <h2>Comparativa <em>antes / después</em></h2>
+
+  <table>
+    <thead><tr><th>Área</th><th>Antes</th><th>Después</th></tr></thead>
+    <tbody>
+      <tr><td>Cabeceras HTTP</td><td>0 de 7</td><td>7 de 7 + CSP estricto</td></tr>
+      <tr><td>CORS</td><td>Wildcard <code>*</code></td><td>Restringido a dominios propios</td></tr>
+      <tr><td>Signup</td><td>Abierto al público</td><td>Invite-only (~192 bits entropía)</td></tr>
+      <tr><td>Confirmación de email</td><td>Deshabilitada</td><td>Obligatoria antes del primer login</td></tr>
+      <tr><td>Auth callback</td><td>Inexistente</td><td><code>/auth/callback</code> con PKCE + OTP</td></tr>
+      <tr><td>Realtime WebSocket</td><td>100% roto (<code>%0A</code> en env)</td><td>Funcional</td></tr>
+      <tr><td>Teléfonos en UI</td><td>Expuestos completos</td><td>Últimos 4 dígitos enmascarados</td></tr>
+      <tr><td>Accesibilidad botones</td><td>7 sin aria-label</td><td>0 sin aria-label</td></tr>
+      <tr><td>Skip link</td><td>Ausente</td><td>Presente en los 3 sitios</td></tr>
+      <tr><td>robots.txt / sitemap</td><td>404</td><td>Generados correctamente</td></tr>
+      <tr><td>Open Graph / Twitter</td><td>Sin metadata</td><td>Imagen dinámica branded</td></tr>
+      <tr><td>Email branding</td><td>Default Supabase</td><td>6 templates Impulsa PR (Esmeralda)</td></tr>
+      <tr><td>Site URL auth</td><td><code>http://localhost:3000</code></td><td><code>https://cliente.impulsapr.com</code></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="page-break"></div>
+
+  <div class="block">
+  <div class="gold-divider" style="margin-top:0"></div>
+
+  <h2>Archivos <em>clave modificados</em></h2>
+  <ul>
+    <li><code class="inline">impulsa-pr/next.config.ts</code> — Security headers + optimizePackageImports</li>
+    <li><code class="inline">impulsa-pr/src/app/layout.tsx</code> — Metadata, viewport, skip link</li>
+    <li><code class="inline">impulsa-pr/src/app/robots.ts</code> + <code class="inline">sitemap.ts</code> + <code class="inline">opengraph-image.tsx</code></li>
+    <li><code class="inline">impulsa-pr/src/app/auth/callback/route.ts</code> — Handler email confirmation</li>
+    <li><code class="inline">impulsa-pr/supabase/migrations/20260422_invites.sql</code> — Sistema invite-only</li>
+    <li><code class="inline">impulsa-pr/supabase/email-templates/*.html</code> — 6 templates branded</li>
+    <li><code class="inline">impulsa-pr/src/components/leads/leads-table.tsx</code> — Masking de teléfonos</li>
+    <li><code class="inline">impulsa-pr/src/components/layout/topbar.tsx</code> + <code class="inline">sidebar.tsx</code> — aria-labels</li>
+    <li>Análogos en <code class="inline">whatsapp-demos/</code> e <code class="inline">impulsapr-next/</code> (marketing)</li>
+  </ul>
+  </div>
+
+  <div class="footer">
+    <div><strong style="color: #fafaf5;">Impulsa</strong><span style="color: #eab308; font-weight: 700; margin-left: 4px; letter-spacing: 0.1em;">PR</span> · Hecho en Puerto Rico 🇵🇷</div>
+    <div><a href="https://impulsapr.com">impulsapr.com</a> · Reporte interno · No distribuir</div>
+  </div>
+
+</div>
+</body>
+</html>

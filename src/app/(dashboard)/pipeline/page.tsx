@@ -16,6 +16,7 @@ import { getSupabase } from '@/lib/supabase'
 import { PipelineColumn } from '@/components/pipeline/pipeline-column'
 import { LeadCard } from '@/components/pipeline/lead-card'
 import { EditLeadModal } from '@/components/leads/edit-lead-modal'
+import { CreateLeadModal } from '@/components/leads/create-lead-modal'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/components/ui/toast'
 import { useTranslation } from '@/lib/i18n'
@@ -29,6 +30,7 @@ export default function PipelinePage() {
   const [updating, setUpdating] = useState<string | null>(null)
   const [optimisticMoves, setOptimisticMoves] = useState<Record<string, string>>({})
   const [editingLead, setEditingLead] = useState<Lead | null>(null)
+  const [createModalOpen, setCreateModalOpen] = useState(false)
 
   const stages = [
     { key: 'nuevo', labelKey: 'stage.nuevo' as const, color: 'bg-blue-400', border: 'border-blue-400/30', bg: 'bg-blue-400/5' },
@@ -82,19 +84,24 @@ export default function PipelinePage() {
       .update({ estado: newEtapa })
       .eq('id', leadId)
 
-    setOptimisticMoves((prev) => {
-      const next = { ...prev }
-      delete next[leadId]
-      return next
-    })
-    setUpdating(null)
-
     if (error) {
+      setOptimisticMoves((prev) => {
+        const next = { ...prev }
+        delete next[leadId]
+        return next
+      })
+      setUpdating(null)
       toast(t('pipeline.moveError'), 'error')
     } else {
       const stageLabel = t(stages.find((s) => s.key === newEtapa)?.labelKey || 'stage.nuevo')
       toast(`${t('pipeline.movedTo')} "${stageLabel}"`)
-      refetch()
+      await refetch()
+      setOptimisticMoves((prev) => {
+        const next = { ...prev }
+        delete next[leadId]
+        return next
+      })
+      setUpdating(null)
     }
   }
 
@@ -116,11 +123,27 @@ export default function PipelinePage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">{t('pipeline.title')}</h1>
-        <p className="text-sm text-muted mt-1">
-          {t('pipeline.subtitle')}
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">{t('pipeline.title')}</h1>
+          <p className="text-sm text-muted mt-1">
+            {t('pipeline.subtitle')}
+          </p>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="hidden sm:block text-right">
+            <p className="text-xs text-muted">{t('pipeline.totalValue')}</p>
+            <p className="text-lg font-bold tracking-tight">
+              ${leads.reduce((s, l) => s + (l.valor_estimado || 0), 0).toLocaleString()}
+            </p>
+          </div>
+          <button
+            onClick={() => setCreateModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-foreground text-background text-sm font-medium hover:opacity-90 active:scale-[0.98] transition-all duration-200 hover:shadow-lg"
+          >
+            + {t('pipeline.addLead')}
+          </button>
+        </div>
       </div>
 
       <DndContext
@@ -153,7 +176,7 @@ export default function PipelinePage() {
           })}
         </div>
 
-        <DragOverlay dropAnimation={{ duration: 200, easing: 'ease-out' }}>
+        <DragOverlay dropAnimation={null}>
           {activeLead ? <LeadCard lead={activeLead} isDragging /> : null}
         </DragOverlay>
       </DndContext>
@@ -162,6 +185,11 @@ export default function PipelinePage() {
         lead={editingLead}
         onClose={() => setEditingLead(null)}
         onUpdated={refetch}
+      />
+      <CreateLeadModal
+        open={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+        onCreated={refetch}
       />
     </div>
   )

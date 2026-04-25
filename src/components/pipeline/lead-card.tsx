@@ -13,8 +13,10 @@ interface LeadCardProps {
 }
 
 export function LeadCard({ lead, isDragging, isUpdating, onClick }: LeadCardProps) {
-  const formatPhone = (phone: string) =>
-    phone.replace('@c.us', '').replace('@s.whatsapp.net', '')
+  const formatPhone = (phone: string) => {
+    const clean = phone.replace('@c.us', '').replace('@s.whatsapp.net', '')
+    return clean.replace(/(\+?\d{1,3})(\d{3})(\d{3})(\d{4})$/, '$1 ($2) $3-••••')
+  }
 
   const formatCurrency = (v: number) =>
     v > 0 ? `$${v.toLocaleString()}` : '\u2014'
@@ -33,7 +35,7 @@ export function LeadCard({ lead, isDragging, isUpdating, onClick }: LeadCardProp
         rounded-xl border bg-card p-3.5 cursor-grab active:cursor-grabbing
         transition-all duration-200 group
         ${isDragging
-          ? 'border-border-hover bg-card shadow-lg shadow-foreground/5 scale-[1.02] rotate-1 opacity-90'
+          ? 'border-border-hover bg-card shadow-xl shadow-foreground/10 ring-1 ring-foreground/10'
           : isUpdating
             ? 'border-border opacity-60'
             : 'border-border hover:border-border-hover hover:bg-card-hover hover:shadow-md hover:shadow-foreground/5'

@@ -1,17 +1,27 @@
 'use client'
 
 import { useState } from 'react'
-import { Bot, MessageSquare, User } from 'lucide-react'
+import { Bot, MessageSquare, User, Search, ShieldCheck, ShieldAlert, Loader2 } from 'lucide-react'
 import { useLeads } from '@/hooks/use-leads'
+import { getSupabase } from '@/lib/supabase'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useToast } from '@/components/ui/toast'
 import { useTranslation } from '@/lib/i18n'
 
 export default function ConversationsPage() {
-  const { leads, loading } = useLeads()
+  const { leads, loading, refetch } = useLeads()
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
+  const [toggling, setToggling] = useState(false)
+  const { toast } = useToast()
   const { t } = useTranslation()
 
-  const withMessages = leads.filter((l) => l.historial_mensajes?.length > 0)
+  const withMessages = leads.filter((l) => {
+    if (l.historial_mensajes?.length === 0) return false
+    if (!search) return true
+    const q = search.toLowerCase()
+    return l.nombre.toLowerCase().includes(q) || l.telefono.includes(q)
+  })
   const selected = selectedId
     ? withMessages.find((l) => l.id === selectedId) || withMessages[0]
     : withMessages[0]
@@ -61,10 +71,12 @@ export default function ConversationsPage() {
         <div className="lg:col-span-1 rounded-2xl border border-border bg-card overflow-hidden theme-transition">
           <div className="p-4 border-b border-border">
             <div className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2">
-              <MessageSquare className="w-4 h-4 text-muted" />
+              <Search className="w-4 h-4 text-muted" />
               <input
                 type="text"
                 placeholder={t('conversations.search')}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
                 className="bg-transparent text-sm text-foreground placeholder:text-muted outline-none w-full"
               />
             </div>
@@ -195,16 +207,44 @@ export default function ConversationsPage() {
                 })}
               </div>
 
-              {/* Input */}
+              {/* Control bar */}
               <div className="p-4 border-t border-border">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    placeholder={t('conversations.typePlaceholder')}
-                    className="flex-1 rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted outline-none focus:border-primary/50 transition-colors"
-                  />
-                  <button className="px-4 py-2.5 rounded-xl bg-primary text-background text-sm font-medium hover:bg-primary-dark transition-all duration-200">
-                    {t('conversations.send')}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-xs text-muted">
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    <span>{t('conversations.readOnly')}</span>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      if (!selected) return
+                      setToggling(true)
+                      const { error } = await getSupabase()
+                        .from('leads')
+                        .update({ humano_activo: !selected.humano_activo })
+                        .eq('id', selected.id)
+                      setToggling(false)
+                      if (error) {
+                        toast(error.message, 'error')
+                      } else {
+                        toast(selected.humano_activo ? t('conversations.switchedToAI') : t('conversations.switchedToHuman'))
+                        refetch()
+                      }
+                    }}
+                    disabled={toggling}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-medium transition-all duration-200 active:scale-[0.97] disabled:opacity-50 ${
+                      selected.humano_activo
+                        ? 'bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20'
+                        : 'bg-accent-orange/10 text-accent-orange border border-accent-orange/20 hover:bg-accent-orange/20'
+                    }`}
+                  >
+                    {toggling ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : selected.humano_activo ? (
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                    ) : (
+                      <ShieldAlert className="w-3.5 h-3.5" />
+                    )}
+                    {selected.humano_activo ? t('conversations.switchToAI') : t('conversations.takeControl')}
                   </button>
                 </div>
               </div>

@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Impulsa · Informe completo del Dashboard</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm; }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+    color: #111;
+    background: #fff;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  body { padding: 28px 36px; max-width: 820px; margin: 0 auto; line-height: 1.55; }
+  h1 { font-size: 26px; letter-spacing: -0.5px; margin: 0 0 4px; }
+  h2 { font-size: 16px; margin: 28px 0 10px; color: #0a6845; border-bottom: 1px solid #d9d9d9; padding-bottom: 6px; letter-spacing: -0.2px; }
+  h3 { font-size: 13px; margin: 16px 0 6px; color: #1a1a1a; }
+  p, li { font-size: 12px; color: #222; }
+  ul { padding-left: 18px; margin: 6px 0 10px; }
+  li { margin: 3px 0; }
+  .muted { color: #666; }
+  .cover {
+    text-align: center;
+    padding: 40px 20px 30px;
+    border: 1px solid #e6e6e6;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #f5fbf8 0%, #ffffff 100%);
+    margin-bottom: 22px;
+  }
+  .badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: #0a6845;
+    color: #fff;
+    margin-bottom: 10px;
+  }
+  .subtitle { font-size: 13px; color: #555; margin-top: 4px; }
+  .meta { font-size: 10px; color: #999; margin-top: 14px; }
+  .section { page-break-inside: avoid; break-inside: avoid; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .card {
+    border: 1px solid #e6e6e6;
+    border-radius: 8px;
+    padding: 10px 12px;
+    background: #fafafa;
+  }
+  .card strong { display: block; font-size: 12px; margin-bottom: 3px; }
+  .kpi { color: #0a6845; font-weight: 700; }
+  .warn  { color: #b85500; }
+  .muted-note {
+    border-left: 3px solid #b3b3b3;
+    background: #f7f7f7;
+    padding: 8px 12px;
+    font-size: 11px;
+    color: #444;
+    margin: 10px 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .highlight-note {
+    border-left: 3px solid #0a6845;
+    background: #f0faf5;
+    padding: 8px 12px;
+    font-size: 11px;
+    color: #1a3a2a;
+    margin: 10px 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .toc ol { padding-left: 20px; }
+  .toc li { margin: 4px 0; font-size: 12px; }
+  table { width: 100%; border-collapse: collapse; margin: 8px 0 12px; font-size: 11px; }
+  th, td { border: 1px solid #e0e0e0; padding: 6px 8px; text-align: left; vertical-align: top; }
+  th { background: #f3f3f3; font-weight: 600; color: #333; }
+  code { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 10.5px; background: #f0f0f0; padding: 1px 5px; border-radius: 3px; }
+  .page-break { page-break-before: always; }
+  footer {
+    margin-top: 30px;
+    padding-top: 10px;
+    border-top: 1px solid #e0e0e0;
+    font-size: 10px;
+    color: #888;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <span class="badge">Impulsa · Dashboard</span>
+  <h1>Informe completo del panel</h1>
+  <p class="subtitle">Qué información entrega, qué puedes hacer con él, y cómo usarlo a fondo.</p>
+  <p class="meta">Versión 18 abril 2026 · para el equipo Impulsa-PR</p>
+</div>
+
+<div class="section toc">
+  <h2>Índice</h2>
+  <ol>
+    <li>Visión general y estructura del dashboard</li>
+    <li>Pestaña 1 — Dashboard (panel principal)</li>
+    <li>Pestaña 2 — Analíticas (corazón del producto)</li>
+    <li>Pestaña 3 — Leads</li>
+    <li>Pestaña 4 — Pipeline</li>
+    <li>Pestaña 5 — Conversaciones</li>
+    <li>Pestaña 6 — Soporte (canal directo)</li>
+    <li>Pestaña 7 — Configuración</li>
+    <li>Notificaciones en tiempo real</li>
+    <li>Internacionalización, temas y accesibilidad</li>
+    <li>Exportar datos y generar reportes</li>
+    <li>Glosario de métricas</li>
+    <li>Caveats técnicos y pendientes</li>
+  </ol>
+</div>
+
+<div class="section">
+  <h2>1 · Visión general y estructura</h2>
+  <p>
+    Impulsa es un CRM para negocios que automatizan captación de clientes vía un bot de WhatsApp.
+    El dashboard reúne en un solo lugar todo lo que hace el bot (leads que entran,
+    conversaciones, citas agendadas, tasa de conversión, pipeline, ingresos)
+    y cruza los datos para que puedas decidir en minutos qué mover.
+  </p>
+  <p>
+    La navegación vive en el sidebar izquierdo, en este orden:
+    <strong>Dashboard → Analíticas → Leads → Pipeline → Conversaciones → Soporte → Configuración</strong>.
+    Las Analíticas están justo debajo del Dashboard porque es la pestaña que usarás más.
+  </p>
+  <div class="highlight-note">
+    Todos los datos son multi-tenant: cada operación está filtrada por <code>cliente_id</code>
+    vía RLS en Supabase. No ves datos de otros negocios ni ellos los tuyos.
+  </div>
+</div>
+
+<div class="section page-break">
+  <h2>2 · Dashboard (panel principal)</h2>
+  <p>Es la pantalla de inicio. Está pensada para una mirada de 30 segundos por la mañana.</p>
+  <h3>Qué información entrega</h3>
+  <ul>
+    <li><strong>KPIs del período</strong>: Total Leads, Revenue cerrado, Close Rate, Pipeline abierto, AI Response Rate, Hot Leads.</li>
+    <li><strong>Delta vs. periodo anterior</strong> en cada KPI (verde/rojo).</li>
+    <li><strong>Selector de rango</strong> 7 / 30 / 90 días.</li>
+  </ul>
+  <h3>Qué puedes hacer aquí</h3>
+  <ul>
+    <li>Ver de un vistazo si el negocio crece, se estanca o baja.</li>
+    <li>Saltar directo a un lead caliente desde la tarjeta Hot Leads.</li>
+    <li>Cambiar el rango para comparar semana vs mes vs trimestre.</li>
+  </ul>
+</div>
+
+<div class="section">
+  <h2>3 · Analíticas — el corazón del producto</h2>
+  <p>La pestaña más completa. Está dividida en bloques apilados verticalmente.</p>
+
+  <h3>3.1 · Sticky header + Exportar</h3>
+  <ul>
+    <li>Selector 7/30/90 días siempre visible al hacer scroll.</li>
+    <li>Botón <strong>Exportar</strong> con cuatro opciones:
+      <em>Leads (CSV)</em>, <em>Resumen de métricas (CSV)</em>, <em>Citas (CSV)</em>
+      e <em>Imprimir / Guardar PDF</em> (usa el diálogo nativo del navegador con CSS de impresión).</li>
+  </ul>
+
+  <h3>3.2 · Resumen ejecutivo + Insights inteligentes</h3>
+  <ul>
+    <li><strong>Resumen ejecutivo</strong>: un párrafo que resume el periodo en lenguaje natural.</li>
+    <li><strong>Insights inteligentes</strong>: tarjetas auto-generadas a partir de reglas sobre las métricas
+      (momentum de leads, cambio en conversión, cancelaciones, tiempo de respuesta, no-show,
+      hora pico, takeover humano, pipeline abierto, mejor/peor día, rachas de días sin leads).
+      Cada insight tiene un tipo: <span class="kpi">positivo</span>, <span class="warn">advertencia</span>, negativo o informativo.</li>
+  </ul>
+  <div class="muted-note">
+    Actualmente las reglas son determinísticas (no usan LLM). El upgrade a texto generado por Claude
+    requiere añadir <code>@anthropic-ai/sdk</code>, crear <code>/api/insights/route.ts</code> y la variable
+    <code>ANTHROPIC_API_KEY</code>. La estructura ya está preparada.
+  </div>
+
+  <h3>3.3 · Filtros globales</h3>
+  <p>Barra con tres filtros: <em>tipo de negocio</em>, <em>origen/canal</em>, <em>nivel de interés</em>.
+  Afectan los componentes derivados de leads (revenue, cold leads, source attribution, quality, heatmap).</p>
+
+  <h3>3.4 · 6 StatCards con sparkline inline</h3>
+  <p>Leads totales, Citas agendadas, Tasa de conversión, Tasa de cancelación, Tiempo hasta cita, Mensajes totales.
+  Cada una con delta vs periodo anterior y <strong>minigráfico diario en la tarjeta</strong> para detectar tendencia a simple vista.</p>
+
+  <h3>3.5 · Ingresos (3 tarjetas)</h3>
+  <ul>
+    <li><strong>Pipeline</strong> abierto (suma de <code>valor_estimado</code> de leads no cerrados).</li>
+    <li><strong>Cerrado</strong> en el periodo (<code>valor_real</code> si existe, si no <code>valor_estimado</code>).</li>
+    <li><strong>Promedio por lead</strong>.</li>
+  </ul>
+
+  <h3>3.6 · Metas mensuales + forecast</h3>
+  <p>Dos tarjetas con anillo de progreso (leads/mes y citas/mes). La meta se edita inline, se guarda
+  en <code>localStorage</code>. El forecast proyecta dónde terminarás el mes si sigues el ritmo actual
+  y te dice si vas <em>adelantado</em>, <em>en tiempo</em> o <em>atrasado</em>.</p>
+
+  <h3>3.7 · Leads fríos</h3>
+  <p>Tarjeta que muestra leads abiertos sin contacto por &gt;48 horas, ordenados del más frío al más reciente.
+  Click → va a la pestaña Leads con foco en ese lead.</p>
+
+  <h3>3.8 · Rendimiento del bot</h3>
+  <ul>
+    <li><strong>Tiempo de respuesta</strong>: promedio ponderado por conversación, sparkline de la serie, delta vs periodo previo.</li>
+    <li><strong>Conversaciones sin respuesta</strong>, mensajes promedio hasta agendar cita, mensajes promedio cuando no hay cita.</li>
+    <li><strong>Nivel de interés</strong> (alto/medio/bajo) + <strong>tasa de takeover humano</strong>.</li>
+  </ul>
+
+  <h3>3.9 · Series temporales con comparación</h3>
+  <ul>
+    <li><strong>Leads por día</strong>: línea con toggle para superponer el periodo anterior (línea punteada).</li>
+    <li><strong>Citas por día</strong>: barras apiladas agendadas vs canceladas.</li>
+  </ul>
+
+  <h3>3.10 · Actividad por hora + Heatmap día × hora</h3>
+  <ul>
+    <li>Barras 0–23h mostrando mensajes del bot vs clientes con hora pico indicada.</li>
+    <li>Heatmap 7 × 24 (día de la semana × hora) basado en <code>fecha_primer_contacto</code> de los leads.
+      Intensidad proporcional al volumen, con la celda pico resaltada.</li>
+  </ul>
+
+  <h3>3.11 · Embudo de conversión</h3>
+  <p>Del primer contacto al cierre, con porcentaje y caída entre etapas.</p>
+
+  <h3>3.12 · Nicho, atribución de origen, estado de citas</h3>
+  <ul>
+    <li><strong>Por nicho</strong>: top 6 nichos con barras de viables / total. Click → filtra leads por ese nicho.</li>
+    <li><strong>Atribución</strong>: toggle origen/fuente, agrega leads + conversion + pipeline. Click → filtra leads.</li>
+    <li><strong>Estado de citas</strong>: donut agendadas/completadas/canceladas/vencidas, con badge de no-show rate.</li>
+  </ul>
+
+  <h3>3.13 · Próximas citas + Actividad reciente</h3>
+  <p>Las citas de los próximos días con estado de recordatorios (24h / 1h enviados) y un feed de actividad
+  agrupado por Hoy / Ayer / Antes.</p>
+</div>
+
+<div class="section page-break">
+  <h2>4 · Leads</h2>
+  <ul>
+    <li>Tabla completa con búsqueda, filtros por estado, nivel, nicho, origen.</li>
+    <li>Acepta <code>?q=</code> en la URL para drill-down desde analíticas.</li>
+    <li>Detalle del lead con historial de mensajes, notas AI, valor estimado/real, edición inline.</li>
+  </ul>
+</div>
+
+<div class="section">
+  <h2>5 · Pipeline</h2>
+  <ul>
+    <li>Kanban drag-and-drop por etapa de venta.</li>
+    <li>Arrastra un lead entre columnas para cambiar su <code>etapa</code>.</li>
+    <li>Valor total por columna visible en el header.</li>
+  </ul>
+</div>
+
+<div class="section">
+  <h2>6 · Conversaciones</h2>
+  <ul>
+    <li>Lista de chats del bot con cada lead en tiempo real.</li>
+    <li>Toma de control humano: botón para tomar una conversación cuando el bot necesita ayuda.</li>
+    <li>Resumen AI del hilo cuando existe.</li>
+  </ul>
+</div>
+
+<div class="section">
+  <h2>7 · Soporte — canal directo al equipo Impulsa</h2>
+  <p>
+    Pestaña nueva. Envía mensajes directos al equipo de Impulsa para reportar fallas, dudas o sugerencias.
+  </p>
+  <h3>Qué puedes hacer</h3>
+  <ul>
+    <li>Redactar un mensaje con <strong>asunto</strong>, <strong>prioridad</strong> (baja, normal, alta, urgente) y texto (hasta 4000 caracteres).</li>
+    <li>Ver el hilo completo cliente ↔ soporte, agrupado por día, en estilo chat.</li>
+    <li>Recibir respuestas en tiempo real vía Supabase Realtime — llegan con un badge de “nuevos”.</li>
+    <li>Enviar con <strong>Ctrl+Enter</strong>.</li>
+    <li>Alternativa por email: <code>mrulisess.business@gmail.com</code>.</li>
+  </ul>
+  <h3>Cómo está construido</h3>
+  <ul>
+    <li>Tabla <code>soporte_mensajes</code> en Supabase con RLS estricto (solo lees/escribes tus propios mensajes).</li>
+    <li>Campos: <code>autor</code> (cliente/soporte), <code>asunto</code>, <code>mensaje</code>, <code>prioridad</code>, <code>estado</code> (abierto / en progreso / resuelto / cerrado), flags de lectura.</li>
+    <li>El equipo de soporte responde desde el Supabase Dashboard (service role).</li>
+  </ul>
+  <div class="muted-note">
+    Migración SQL: <code>supabase/migrations/20260418_soporte_mensajes.sql</code>.
+    Debe ejecutarse en el SQL editor de Supabase antes de usar la pestaña.
+  </div>
+</div>
+
+<div class="section">
+  <h2>8 · Configuración</h2>
+  <ul>
+    <li>Perfil, avatar, tema (claro/oscuro), idioma (ES/EN).</li>
+    <li>Preferencias del bot, conexiones y plan.</li>
+  </ul>
+</div>
+
+<div class="section page-break">
+  <h2>9 · Notificaciones en tiempo real</h2>
+  <p>
+    Campana en la barra superior con contador rojo de <em>no leídas</em>.
+    Los datos vienen de la tabla <code>notificaciones</code> vía Supabase Realtime.
+  </p>
+  <ul>
+    <li>Click en una notificación la marca como leída.</li>
+    <li>Botón “Marcar todas como leídas”.</li>
+    <li>Hasta 50 notificaciones más recientes, panel de 96rem de ancho con scroll.</li>
+  </ul>
+</div>
+
+<div class="section">
+  <h2>10 · Internacionalización, temas y accesibilidad</h2>
+  <ul>
+    <li><strong>Idiomas</strong>: español e inglés, toggle en la barra superior. Todas las cadenas vienen del diccionario <code>src/lib/i18n.tsx</code>.</li>
+    <li><strong>Temas</strong>: claro y oscuro. Animaciones de transición fluidas.</li>
+    <li><strong>Accesibilidad</strong>: teclado (Ctrl+K para búsqueda, Esc para cerrar), aria-labels en iconos-acción, focus visible.</li>
+  </ul>
+</div>
+
+<div class="section">
+  <h2>11 · Exportar datos y generar reportes</h2>
+  <div class="grid-2">
+    <div class="card"><strong>CSV — Leads filtrados</strong><span class="muted">Incluye nombre, teléfono, email, tipo de negocio, origen, fuente, nivel, estado, etapa, valores, fechas.</span></div>
+    <div class="card"><strong>CSV — Resumen métricas</strong><span class="muted">15 métricas clave del periodo, listas para pegar en Sheets o Excel.</span></div>
+    <div class="card"><strong>CSV — Citas por día</strong><span class="muted">Fecha, agendadas, canceladas, completadas.</span></div>
+    <div class="card"><strong>Imprimir / PDF</strong><span class="muted">CSS de impresión oculta sidebar y toolbars; cada sección se imprime completa sin cortes.</span></div>
+  </div>
+  <p class="muted" style="font-size:11px;">Todos los exports añaden BOM UTF-8 para que acentos y ñ se vean correctamente en Excel.</p>
+</div>
+
+<div class="section page-break">
+  <h2>12 · Glosario de métricas</h2>
+  <table>
+    <thead>
+      <tr><th>Métrica</th><th>Definición</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Leads totales</td><td>Nuevos contactos únicos en el periodo.</td></tr>
+      <tr><td>Tasa de conversión</td><td>Citas agendadas / leads totales × 100.</td></tr>
+      <tr><td>Tasa de cancelación</td><td>Citas canceladas / citas agendadas × 100.</td></tr>
+      <tr><td>No-show rate</td><td>Citas vencidas / (completadas + vencidas + canceladas) × 100.</td></tr>
+      <tr><td>Tiempo de respuesta</td><td>Promedio ponderado en segundos, tomando en cuenta el volumen diario de conversaciones.</td></tr>
+      <tr><td>Takeover</td><td>% de leads con <code>humano_activo = true</code>.</td></tr>
+      <tr><td>Pipeline abierto</td><td>Σ valor_estimado de leads no cerrados (con filtros aplicados).</td></tr>
+      <tr><td>Forecast de meta</td><td>Valor actual × (días del mes / días transcurridos).</td></tr>
+      <tr><td>Delta vs periodo anterior</td><td>Se compara el rango actual (ej. últimos 30 días) contra el rango inmediatamente anterior (días 31–60).</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="section">
+  <h2>13 · Caveats y pendientes</h2>
+  <ul>
+    <li><strong>Vistas sin <code>cliente_id</code></strong>: <code>v_tiempo_respuesta</code> y <code>v_actividad_por_hora</code> dependen de RLS que pasa por debajo. Si las RLS en esas vistas no están configuradas, podrían fugar datos entre clientes. Revisar.</li>
+    <li><strong>Filtros globales parciales</strong>: afectan solo métricas derivadas de leads. Revenue, cold leads, source, quality y heatmap sí responden; las RPCs preagregadas (resumen, embudo) no, porque el cálculo está en SQL.</li>
+    <li><strong>Heatmap en zona local</strong>: usa la TZ del navegador. Para un negocio multi-TZ, definir la TZ del cliente y formatear con ella.</li>
+    <li><strong>Insights determinísticos</strong>: la capa actual es por reglas. Upgrade a Claude pendiente pero trivial.</li>
+    <li><strong>Admin de soporte</strong>: el equipo responde desde Supabase Dashboard; si se quiere un panel admin dentro del app, agregar claim <code>soporte</code> y políticas extra.</li>
+  </ul>
+</div>
+
+<footer>
+  Generado automáticamente · Impulsa Dashboard · v18 abril 2026
+</footer>
+
+</body>
+</html>

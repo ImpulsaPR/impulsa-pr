@@ -1,49 +1,101 @@
 @import "tailwindcss";
 
-/* ===== DARK THEME (default) ===== */
+/* ===== DARK THEME (default) — Esmeralda: negro mate + esmeralda + dorado ===== */
 @theme {
-  --color-background: #09090B;
-  --color-foreground: #FAFAFA;
-  --color-card: #18181B;
-  --color-card-hover: #1F1F23;
-  --color-border: #27272A;
-  --color-border-hover: #3F3F46;
-  --color-muted: #71717A;
-  --color-primary: #00CC6A;
-  --color-primary-dark: #00A857;
-  --color-accent-red: #EF4444;
-  --color-accent-orange: #F97316;
-  --color-accent-yellow: #EAB308;
+  --color-background: oklch(0.16 0.005 95);       /* #0a0a0a negro mate */
+  --color-foreground: oklch(0.97 0.005 95);       /* #fafaf5 crema */
+  --color-card: oklch(0.21 0.005 95);             /* #141414 */
+  --color-card-hover: oklch(0.25 0.006 95);       /* #1c1c1c */
+  --color-border: oklch(0.28 0.005 95);           /* #262626 hairline */
+  --color-border-hover: oklch(0.36 0.006 95);     /* #3a3a3a */
+  --color-muted: oklch(0.60 0.005 95);            /* #8a8a8a */
+  --color-primary: oklch(0.58 0.14 165);          /* #059669 esmeralda brillante */
+  --color-primary-dark: oklch(0.50 0.11 165);     /* #047857 esmeralda */
+  --color-accent-red: oklch(0.62 0.22 28);        /* #ef4444 */
+  --color-accent-orange: oklch(0.75 0.16 65);     /* #f59e0b */
+  --color-accent-yellow: oklch(0.80 0.14 90);     /* #eab308 */
+  --color-accent-green: oklch(0.74 0.19 150);     /* #22c55e */
+  /* Secciones dominantes — esmeralda profundo */
+  --color-navy: oklch(0.34 0.10 165);             /* #064e3b esmeralda profundo */
+  --color-navy-elevated: oklch(0.42 0.11 165);    /* #0e6d52 */
+  --color-navy-foreground: oklch(0.97 0.005 95);
+  --color-navy-border: oklch(0.50 0.11 165);
+  /* Dorado signature (italic accent + micro-decorations sobre emerald) */
+  --color-gold: oklch(0.72 0.15 80);              /* #ca8a04 dorado antiguo */
+  --color-gold-bright: oklch(0.82 0.17 90);       /* #eab308 dorado brillante */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-serif: var(--font-dm-serif);
 }
 
-/* ===== LIGHT THEME ===== */
+/* ===== LIGHT THEME — Crema neutral + esmeralda + dorado ===== */
 html.light {
-  --color-background: #FFFFFF;
-  --color-foreground: #09090B;
-  --color-card: #F9FAFB;
-  --color-card-hover: #F3F4F6;
-  --color-border: #E5E7EB;
-  --color-border-hover: #D1D5DB;
-  --color-muted: #6B7280;
-  --color-primary: #00A857;
-  --color-primary-dark: #008A47;
-  --color-accent-red: #DC2626;
-  --color-accent-orange: #EA580C;
-  --color-accent-yellow: #CA8A04;
+  --color-background: oklch(0.985 0.003 95);      /* #fafaf5 crema neutral */
+  --color-foreground: oklch(0.15 0.005 95);       /* #0a0a0a negro mate */
+  --color-card: oklch(1 0 0);                     /* #ffffff */
+  --color-card-hover: oklch(0.95 0.008 95);       /* #f5f5f0 */
+  --color-border: oklch(0.90 0.005 95);           /* #e5e5e0 */
+  --color-border-hover: oklch(0.83 0.008 95);     /* #d4d4cf */
+  --color-muted: oklch(0.44 0.006 95);            /* #6b6b6b */
+  --color-primary: oklch(0.50 0.11 165);          /* #047857 esmeralda (más oscura en light) */
+  --color-primary-dark: oklch(0.42 0.10 165);     /* #065f46 */
+  --color-accent-red: oklch(0.60 0.22 28);
+  --color-accent-orange: oklch(0.68 0.17 60);
+  --color-accent-yellow: oklch(0.72 0.15 85);
+  --color-accent-green: oklch(0.54 0.15 150);
+  --color-navy: oklch(0.36 0.09 165);             /* #064e3b esmeralda profundo (mismo en ambos modos) */
+  --color-navy-elevated: oklch(0.44 0.10 165);
+  --color-navy-foreground: oklch(0.985 0.003 95);
+  --color-navy-border: oklch(0.52 0.10 165);
+  --color-gold: oklch(0.68 0.15 70);              /* #b45309 dorado más oscuro para light */
+  --color-gold-bright: oklch(0.78 0.16 82);       /* #eab308 */
 }
 
 * {
   scrollbar-width: thin;
 }
 
+/* Focus ring accesible — visible solo con navegación por teclado */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+:focus:not(:focus-visible) { outline: none; }
+
+/* sr-only para skip links (Tailwind v4 lo trae, pero aseguramos) */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 html.dark * {
-  scrollbar-color: #27272A #09090B;
+  scrollbar-color: oklch(0.28 0.005 95) oklch(0.16 0.005 95);
 }
 
 html.light * {
-  scrollbar-color: #D4D4D8 #FFFFFF;
+  scrollbar-color: oklch(0.83 0.008 95) oklch(0.985 0.003 95);
+}
+
+/* Quasar typing dots */
+@keyframes blink {
+  0%, 80%, 100% { opacity: 0.25; }
+  40% { opacity: 0.9; }
+}
+
+/* Display serif — Quasar editorial titulares */
+.font-display {
+  font-family: var(--font-dm-serif), Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.02em;
 }
 
 body {
@@ -51,6 +103,21 @@ body {
   color: var(--color-foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
   transition: background-color 0.3s ease, color 0.3s ease;
+  position: relative;
+}
+
+/* Brand hairline teal — firma visual constante en top */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(to right, transparent 0%, var(--color-primary) 50%, transparent 100%);
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0.7;
 }
 
 /* Pulse animation for status indicators */
@@ -135,7 +202,205 @@ body {
   background-position: 0 0;
 }
 
+/* Fondo profesional: dot grid + glow esmeralda sutil arriba */
+.ip-page-bg {
+  position: relative;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, oklch(0.58 0.14 165 / 0.14) 0%, transparent 60%),
+    var(--color-background);
+}
+html.light .ip-page-bg {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, oklch(0.58 0.14 165 / 0.08) 0%, transparent 60%),
+    var(--color-background);
+}
+.ip-page-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, black 0%, black 60%, transparent 95%);
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 60%, transparent 95%);
+  pointer-events: none;
+  z-index: 0;
+}
+html.light .ip-page-bg::before {
+  background-image: radial-gradient(circle, oklch(0.15 0.005 95 / 0.08) 1px, transparent 1px);
+}
+.ip-page-bg > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Secciones dominantes: esmeralda profundo + dot grid + glow dorado */
+.section-navy {
+  position: relative;
+  background: var(--color-navy);
+  color: var(--color-navy-foreground);
+  overflow: hidden;
+}
+.section-navy::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, oklch(1 0 0 / 0.05) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, black 0%, black 60%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 60%, transparent 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+.section-navy::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 80% 50% at 50% -10%, oklch(0.72 0.15 80 / 0.20) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+.section-navy > * {
+  position: relative;
+  z-index: 1;
+}
+
 /* Smooth transitions for theme-aware elements */
 .theme-transition {
   transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* ===== STAGGERED FADE-IN ===== */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Stagger delays */
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.1s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.2s; }
+.stagger-5 { animation-delay: 0.25s; }
+.stagger-6 { animation-delay: 0.3s; }
+.stagger-7 { animation-delay: 0.35s; }
+.stagger-8 { animation-delay: 0.4s; }
+
+/* ===== GLASSMORPHISM ===== */
+.glass-card {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+html.dark .glass-card {
+  background: rgba(24, 24, 27, 0.7);
+  border-color: rgba(63, 63, 70, 0.5);
+}
+
+html.light .glass-card {
+  background: rgba(255, 255, 255, 0.7);
+  border-color: rgba(229, 231, 235, 0.7);
+}
+
+/* ===== GLOW EFFECTS — teal brand + semánticos ===== */
+.glow-teal { box-shadow: 0 0 20px oklch(0.58 0.14 165 / 0.18), 0 8px 32px oklch(0.58 0.14 165 / 0.10); }
+.glow-green { box-shadow: 0 0 20px oklch(0.74 0.19 150 / 0.12), 0 8px 32px oklch(0.74 0.19 150 / 0.06); }
+.glow-gold { box-shadow: 0 0 20px oklch(0.72 0.15 80 / 0.18), 0 8px 32px oklch(0.72 0.15 80 / 0.10); }
+.glow-orange { box-shadow: 0 0 20px oklch(0.75 0.16 65 / 0.12), 0 8px 32px oklch(0.75 0.16 65 / 0.06); }
+.glow-red { box-shadow: 0 0 20px oklch(0.65 0.22 25 / 0.12), 0 8px 32px oklch(0.65 0.22 25 / 0.06); }
+.glow-blue { box-shadow: 0 0 20px oklch(0.58 0.14 165 / 0.12), 0 8px 32px oklch(0.58 0.14 165 / 0.06); }
+
+/* ===== ANIMATED PILL TAB INDICATOR ===== */
+.pill-tab-active {
+  position: relative;
+}
+
+.pill-tab-active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 25%;
+  right: 25%;
+  height: 2px;
+  background: var(--color-foreground);
+  border-radius: 1px;
+}
+
+/* ===== COUNTER ANIMATION ===== */
+@keyframes count-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-count-up {
+  animation: count-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 0.2s;
+}
+
+/* ===== IMPROVED SHIMMER ===== */
+@keyframes shimmer-smooth {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+html.dark .animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(39, 39, 42, 0.6) 25%,
+    rgba(63, 63, 70, 0.4) 50%,
+    rgba(39, 39, 42, 0.6) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer-smooth 2s ease-in-out infinite;
+}
+
+html.light .animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(229, 231, 235, 0.6) 25%,
+    rgba(243, 244, 246, 0.8) 50%,
+    rgba(229, 231, 235, 0.6) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer-smooth 2s ease-in-out infinite;
+}
+
+/* ===== PRINT ===== */
+@media print {
+  .print-hide,
+  aside,
+  nav,
+  .sticky {
+    display: none !important;
+  }
+  body,
+  html {
+    background: white !important;
+    color: black !important;
+  }
+  .bg-card,
+  .bg-background {
+    background: white !important;
+    border-color: #e5e7eb !important;
+  }
+  .text-muted,
+  .text-foreground,
+  .text-foreground\/90 {
+    color: #111 !important;
+  }
+  .rounded-2xl,
+  .rounded-xl {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .animate-fade-up,
+  .animate-count-up {
+    animation: none !important;
+  }
+  main {
+    padding: 0 !important;
+  }
 }

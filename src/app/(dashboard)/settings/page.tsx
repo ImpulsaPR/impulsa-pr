@@ -60,6 +60,7 @@ export default function SettingsPage() {
   const [email, setEmail] = useState('')
   const [empresa, setEmpresa] = useState('')
   const [saving, setSaving] = useState(false)
+  const [timezone, setTimezone] = useState('America/Puerto_Rico')
   const [toggles, setToggles] = useState<Record<string, boolean>>(defaultToggles)
 
   const notificationToggles: ToggleItem[] = [
@@ -89,6 +90,8 @@ export default function SettingsPage() {
         setToggles((prev) => ({ ...prev, ...JSON.parse(saved) }))
       } catch { /* ignore */ }
     }
+    const savedTz = localStorage.getItem('impulsa_timezone')
+    if (savedTz) setTimezone(savedTz)
   }, [])
 
   const handleToggle = (key: string) => {
@@ -373,9 +376,19 @@ export default function SettingsPage() {
           </div>
           <div>
             <label className="text-xs text-muted mb-1.5 block">{t('settings.timezone')}</label>
-            <select className={inputClass}>
-              <option>America/Puerto_Rico (AST)</option>
-              <option>America/New_York (EST)</option>
+            <select
+              value={timezone}
+              onChange={(e) => {
+                setTimezone(e.target.value)
+                localStorage.setItem('impulsa_timezone', e.target.value)
+              }}
+              className={inputClass}
+            >
+              <option value="America/Puerto_Rico">America/Puerto_Rico (AST)</option>
+              <option value="America/New_York">America/New_York (EST)</option>
+              <option value="America/Chicago">America/Chicago (CST)</option>
+              <option value="America/Los_Angeles">America/Los_Angeles (PST)</option>
+              <option value="Europe/Madrid">Europe/Madrid (CET)</option>
             </select>
           </div>
         </div>

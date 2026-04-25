@@ -15,10 +15,17 @@ interface LeadsTableProps {
   loading: boolean
   onRefetch?: () => void
   onLeadClick?: (lead: Lead) => void
+  initialSearch?: string
 }
 
-export function LeadsTable({ leads, loading, onRefetch, onLeadClick }: LeadsTableProps) {
-  const [search, setSearch] = useState('')
+export function LeadsTable({
+  leads,
+  loading,
+  onRefetch,
+  onLeadClick,
+  initialSearch,
+}: LeadsTableProps) {
+  const [search, setSearch] = useState(initialSearch ?? '')
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [confirmLead, setConfirmLead] = useState<Lead | null>(null)
   const [statusFilter, setStatusFilter] = useState<LeadEstado | 'all'>('all')
@@ -45,7 +52,9 @@ export function LeadsTable({ leads, loading, onRefetch, onLeadClick }: LeadsTabl
           l.nombre.toLowerCase().includes(q) ||
           l.telefono.includes(q) ||
           (l.tipo_negocio || '').toLowerCase().includes(q) ||
-          (l.etapa || '').toLowerCase().includes(q)
+          (l.etapa || '').toLowerCase().includes(q) ||
+          (l.origen || '').toLowerCase().includes(q) ||
+          (l.fuente || '').toLowerCase().includes(q)
       )
     }
 
@@ -82,7 +91,9 @@ export function LeadsTable({ leads, loading, onRefetch, onLeadClick }: LeadsTabl
   }
 
   const formatPhone = (phone: string) => {
-    return phone.replace('@c.us', '').replace('@s.whatsapp.net', '')
+    const clean = phone.replace('@c.us', '').replace('@s.whatsapp.net', '')
+    // Privacy: mask last 4 digits in the list view (full number visible en el detalle)
+    return clean.replace(/(\+?\d{1,3})(\d{3})(\d{3})(\d{4})$/, '$1 ($2) $3-••••')
   }
 
   const handleDelete = async () => {
@@ -144,7 +155,7 @@ export function LeadsTable({ leads, loading, onRefetch, onLeadClick }: LeadsTabl
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-background/50 sticky top-0 z-10 backdrop-blur-sm">
-              <th className="text-left px-4 py-3.5">
+              <th scope="col" className="text-left px-4 py-3.5">
                 <button
                   onClick={() => toggleSort('nombre')}
                   className="flex items-center gap-1 text-xs font-medium text-muted hover:text-foreground transition-colors"
@@ -152,11 +163,11 @@ export function LeadsTable({ leads, loading, onRefetch, onLeadClick }: LeadsTabl
                   {t('leads.name')} <ArrowUpDown className="w-3 h-3" />
                 </button>
               </th>
-              <th className="text-left px-4 py-3.5 text-xs font-medium text-muted">{t('leads.phone')}</th>
-              <th className="text-left px-4 py-3.5 text-xs font-medium text-muted">{t('leads.status')}</th>
-              <th className="text-left px-4 py-3.5 text-xs font-medium text-muted">{t('leads.interest')}</th>
-              <th className="text-left px-4 py-3.5 text-xs font-medium text-muted">{t('leads.business')}</th>
-              <th className="text-left px-4 py-3.5">
+              <th scope="col" className="text-left px-4 py-3.5 text-xs font-medium text-muted">{t('leads.phone')}</th>
+              <th scope="col" className="text-left px-4 py-3.5 text-xs font-medium text-muted">{t('leads.status')}</th>
+              <th scope="col" className="text-left px-4 py-3.5 text-xs font-medium text-muted">{t('leads.interest')}</th>
+              <th scope="col" className="text-left px-4 py-3.5 text-xs font-medium text-muted">{t('leads.business')}</th>
+              <th scope="col" className="text-left px-4 py-3.5">
                 <button
                   onClick={() => toggleSort('valor_estimado')}
                   className="flex items-center gap-1 text-xs font-medium text-muted hover:text-foreground transition-colors"
@@ -164,7 +175,7 @@ export function LeadsTable({ leads, loading, onRefetch, onLeadClick }: LeadsTabl
                   {t('leads.estValue')} <ArrowUpDown className="w-3 h-3" />
                 </button>
               </th>
-              <th className="text-left px-4 py-3.5">
+              <th scope="col" className="text-left px-4 py-3.5">
                 <button
                   onClick={() => toggleSort('fecha_ultimo_contacto')}
                   className="flex items-center gap-1 text-xs font-medium text-muted hover:text-foreground transition-colors"
@@ -172,7 +183,7 @@ export function LeadsTable({ leads, loading, onRefetch, onLeadClick }: LeadsTabl
                   {t('leads.lastContact')} <ArrowUpDown className="w-3 h-3" />
                 </button>
               </th>
-              <th className="text-right px-4 py-3.5 text-xs font-medium text-muted">{t('leads.actions')}</th>
+              <th scope="col" className="text-right px-4 py-3.5 text-xs font-medium text-muted">{t('leads.actions')}</th>
             </tr>
           </thead>
           <tbody>
