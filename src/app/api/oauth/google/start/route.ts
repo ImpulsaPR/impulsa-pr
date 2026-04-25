@@ -3,8 +3,8 @@ import { createSupabaseServer } from '@/lib/supabase-server'
 
 export const runtime = 'nodejs'
 
-const CLIENT_ID = process.env.GOOGLE_CLIENT_ID!
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://cliente.impulsapr.com'
+const CLIENT_ID = (process.env.GOOGLE_CLIENT_ID || '').trim()
+const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || 'https://cliente.impulsapr.com').trim()
 
 const SCOPES = [
   'https://www.googleapis.com/auth/calendar',

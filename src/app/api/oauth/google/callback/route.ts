@@ -4,11 +4,11 @@ import { createSupabaseServer } from '@/lib/supabase-server'
 
 export const runtime = 'nodejs'
 
-const CLIENT_ID = process.env.GOOGLE_CLIENT_ID!
-const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://cliente.impulsapr.com'
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
+const CLIENT_ID = (process.env.GOOGLE_CLIENT_ID || '').trim()
+const CLIENT_SECRET = (process.env.GOOGLE_CLIENT_SECRET || '').trim()
+const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || 'https://cliente.impulsapr.com').trim()
+const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim()
+const SUPABASE_SERVICE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim()
 
 interface TokenResponse {
   access_token: string
