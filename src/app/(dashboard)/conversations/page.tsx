@@ -10,6 +10,7 @@ import { ChatWindow } from '@/components/conversations/chat-window'
 import { EmptyState } from '@/components/conversations/empty-state'
 import { sanitizeName } from '@/components/conversations/avatar'
 import { LeadContextSidebar } from '@/components/conversations/lead-context-sidebar'
+import { TeachPrompt, type TeachContext } from '@/components/conversations/teach-prompt'
 
 const FLASH_MS = 600
 
@@ -20,6 +21,7 @@ export default function ConversationsPage() {
   const [toggling, setToggling] = useState(false)
   const [flashingPhones, setFlashingPhones] = useState<Set<string>>(new Set())
   const [contextOpen, setContextOpen] = useState(false)
+  const [teachCtx, setTeachCtx] = useState<TeachContext | null>(null)
   const { toast } = useToast()
   const { t } = useTranslation()
   const listRef = useRef<ConversationListHandle>(null)
@@ -111,6 +113,24 @@ export default function ConversationsPage() {
 
   const handleSend = async (text: string) => {
     if (!selected) return
+
+    // Capture teach context BEFORE the send completes:
+    // last customer msg + last bot msg (if any) en el chat actual
+    const PROSPECT = new Set(['user', 'prospecto', 'cliente'])
+    const BOT = new Set(['assistant', 'bot', 'ai'])
+    const msgs = selectedMessages
+    let lastCustomerMsg = ''
+    let lastBotReply = ''
+    for (let i = msgs.length - 1; i >= 0; i--) {
+      const m = msgs[i]
+      if (!lastCustomerMsg && PROSPECT.has(m.rol)) {
+        lastCustomerMsg = m.mensaje?.trim() || ''
+      } else if (lastCustomerMsg && !lastBotReply && BOT.has(m.rol)) {
+        lastBotReply = m.mensaje?.trim() || ''
+        break
+      }
+    }
+
     try {
       const res = await fetch('/api/whatsapp/send', {
         method: 'POST',
@@ -124,6 +144,17 @@ export default function ConversationsPage() {
       }
       toast('Mensaje enviado')
       refetch()
+
+      // Trigger teach prompt si hay contexto util (al menos pregunta del cliente)
+      if (lastCustomerMsg) {
+        setTeachCtx({
+          customerMessage: lastCustomerMsg,
+          humanReply: text.trim(),
+          botPreviousReply: lastBotReply || undefined,
+          telefono: selected.telefono,
+          key: `${selected.telefono}-${Date.now()}`,
+        })
+      }
     } catch (e) {
       if (e instanceof Error && e.message !== 'Error al enviar') {
         toast('Error de red al enviar', 'error')
@@ -213,6 +244,8 @@ export default function ConversationsPage() {
           onClose={() => setContextOpen(false)}
         />
       )}
+
+      <TeachPrompt context={teachCtx} onDismiss={() => setTeachCtx(null)} />
     </div>
   )
 }
