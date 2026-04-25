@@ -128,10 +128,14 @@ export async function POST(req: Request) {
     cliente_id: clienteId,
   })
 
-  // 9. Mark message_id in bot_sent_messages? No — this is a human, NOT bot.
-  // The takeover detection in n8n: when YCloud webhooks back the 'sent' event,
-  // Buscar Msg Bot finds nothing → No Era Bot? -> registers takeover (already
-  // registered here). Idempotent.
+  // 9. Mark message_id in bot_sent_messages so the n8n webhook flow
+  // recognizes this as "already processed" and skips re-saving on the
+  // outbound 'sent'/'delivered' events that YCloud will fire back.
+  if (messageId) {
+    await admin
+      .from('bot_sent_messages')
+      .upsert({ message_id: messageId, telefono: phoneNoPlus }, { onConflict: 'message_id' })
+  }
 
   // 10. Mark lead.humano_activo=true if a lead exists
   await admin
