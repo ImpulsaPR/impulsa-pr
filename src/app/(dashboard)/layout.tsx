@@ -7,6 +7,8 @@ import { Topbar } from '@/components/layout/topbar'
 import { ToastProvider } from '@/components/ui/toast'
 import { SidebarProvider, useSidebarCollapsed } from '@/hooks/use-sidebar'
 import { ClienteProvider } from '@/hooks/use-cliente'
+import { WelcomeModal } from '@/components/onboarding/welcome-modal'
+import { OnboardingChecklist } from '@/components/onboarding/onboarding-checklist'
 
 function PageTransition({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -47,6 +49,8 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           <PageTransition>{children}</PageTransition>
         </main>
       </div>
+      <WelcomeModal />
+      <OnboardingChecklist />
     </div>
   )
 }
