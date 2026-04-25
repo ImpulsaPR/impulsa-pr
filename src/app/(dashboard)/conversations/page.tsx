@@ -160,7 +160,7 @@ export default function ConversationsPage() {
         <p className="text-sm text-muted mt-1">{t('conversations.subtitle')}</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 h-[calc(100vh-180px)] min-h-[560px]">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 h-[calc(100dvh-200px)] max-h-[780px]">
         {/* Lista — siempre visible en lg+, oculta en mobile cuando hay seleccion */}
         <div
           className={`lg:col-span-1 h-full ${
