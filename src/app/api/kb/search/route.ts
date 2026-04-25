@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createSupabaseServer } from '@/lib/supabase-server'
+import { safeSupabaseError } from '@/lib/safe-error'
 
 export const runtime = 'nodejs'
 
@@ -86,7 +87,10 @@ export async function POST(req: Request) {
   })
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json(
+      { error: safeSupabaseError('kb_search', error).public },
+      { status: 500 }
+    )
   }
 
   return NextResponse.json({

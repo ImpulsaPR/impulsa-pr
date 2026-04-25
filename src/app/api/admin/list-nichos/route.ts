@@ -28,7 +28,8 @@ export async function GET() {
     .order('nombre_display', { ascending: true })
 
   if (error) {
-    return NextResponse.json({ error: error.message, nichos: [] }, { status: 500 })
+    console.error('[admin_list_nichos]', error.message)
+    return NextResponse.json({ error: 'Error consultando nichos', nichos: [] }, { status: 500 })
   }
 
   return NextResponse.json({ ok: true, nichos: data || [] })

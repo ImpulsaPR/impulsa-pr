@@ -118,7 +118,7 @@ export async function POST(req: Request) {
     if (nichoErr) {
       logErr('check_nicho', nichoErr)
       return NextResponse.json(
-        { error: 'no se pudo validar el nicho', detail: nichoErr.message },
+        { error: 'no se pudo validar el nicho' },
         { status: 500 }
       )
     }
@@ -171,7 +171,7 @@ export async function POST(req: Request) {
     if (inviteErr || !invited?.user) {
       logErr('invite', inviteErr)
       return NextResponse.json(
-        { error: 'no se pudo enviar invitacion', detail: inviteErr?.message },
+        { error: 'no se pudo enviar invitacion' },
         { status: 500 }
       )
     }
@@ -214,7 +214,7 @@ export async function POST(req: Request) {
         await admin.auth.admin.deleteUser(authUserId).catch((e) => logErr('rollback_auth', e))
       }
       return NextResponse.json(
-        { error: 'fallo al crear cliente/bot', detail: rpcErr?.message?.slice(0, 200) },
+        { error: 'fallo al crear cliente/bot' },
         { status: 500 }
       )
     }

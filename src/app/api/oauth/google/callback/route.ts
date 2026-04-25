@@ -175,7 +175,8 @@ export async function GET(req: Request) {
     )
 
   if (upsertErr) {
-    return settingsRedirect({ calendar_error: 'db_save_failed', detail: upsertErr.message.slice(0, 80) })
+    console.error('[oauth_callback]', upsertErr.message)
+    return settingsRedirect({ calendar_error: 'db_save_failed' })
   }
 
   return settingsRedirect({ calendar_connected: '1' })

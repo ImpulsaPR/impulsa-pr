@@ -46,7 +46,8 @@ export async function GET() {
   ])
 
   if (clientesRes.error) {
-    return NextResponse.json({ error: clientesRes.error.message }, { status: 500 })
+    console.error('[admin_list_clientes]', clientesRes.error.message)
+    return NextResponse.json({ error: 'Error consultando clientes' }, { status: 500 })
   }
 
   const botsByCliente = new Map<string, { id: string; activo: boolean | null; nicho: string | null }>()

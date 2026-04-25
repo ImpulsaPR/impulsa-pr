@@ -26,8 +26,12 @@ function admin(): SupabaseClient {
 /**
  * Returns a valid access_token for the cliente, refreshing if expired.
  * Throws if no credentials or refresh fails.
+ *
+ * Race protection: si hay refresh en curso (otro proceso con mismo
+ * cliente_id), espera y re-lee la fila. Sin esto, refreshes concurrentes
+ * invalidan el refresh_token uno del otro.
  */
-export async function getValidGoogleToken(clienteId: string): Promise<CalendarCredentials> {
+async function readCredsAndDecrypt(clienteId: string): Promise<CalendarCredentials | null> {
   const { data: cred, error } = await admin()
     .from('bot_credentials')
     .select('access_token, refresh_token, expires_at, calendar_id, google_email')
@@ -35,23 +39,27 @@ export async function getValidGoogleToken(clienteId: string): Promise<CalendarCr
     .eq('provider', 'google_calendar')
     .single()
 
-  if (error || !cred) {
-    throw new Error('Cliente no tiene Google Calendar conectado')
-  }
+  if (error || !cred) return null
 
-  // Decrypt tokens (handles legacy plaintext + new v1: format transparently)
-  const decrypted: CalendarCredentials = {
+  return {
     ...cred,
     access_token: decryptToken(cred.access_token) as string,
     refresh_token: decryptToken(cred.refresh_token),
   } as CalendarCredentials
+}
 
-  const expiresAt = new Date(decrypted.expires_at).getTime()
+export async function getValidGoogleToken(clienteId: string): Promise<CalendarCredentials> {
+  const cred = await readCredsAndDecrypt(clienteId)
+  if (!cred) throw new Error('Cliente no tiene Google Calendar conectado')
+
+  const expiresAt = new Date(cred.expires_at).getTime()
   const expiringSoon = Date.now() > expiresAt - 60_000 // 1 min buffer
 
   if (!expiringSoon) {
-    return decrypted
+    return cred
   }
+
+  const decrypted = cred
 
   if (!decrypted.refresh_token) {
     throw new Error('Token expirado y sin refresh_token. Reconecta Calendar.')
@@ -71,6 +79,16 @@ export async function getValidGoogleToken(clienteId: string): Promise<CalendarCr
 
   if (!refreshRes.ok) {
     const detail = await refreshRes.text().catch(() => '')
+    // Race condition con otro proceso que ya refrescó: re-leer la fila y
+    // usar los tokens que el otro proceso guardó.
+    if (detail.includes('invalid_grant') || detail.includes('invalid_request')) {
+      await new Promise((r) => setTimeout(r, 500))
+      const fresh = await readCredsAndDecrypt(clienteId)
+      if (fresh && new Date(fresh.expires_at).getTime() > Date.now() + 30_000) {
+        console.warn('[google-calendar] refresh race detected, used updated tokens')
+        return fresh
+      }
+    }
     throw new Error(`Refresh fallo: ${detail.slice(0, 200)}`)
   }
 

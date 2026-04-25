@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createSupabaseServer } from '@/lib/supabase-server'
+import { safeSupabaseError } from '@/lib/safe-error'
 
 export const runtime = 'nodejs'
 
@@ -114,7 +115,7 @@ export async function POST(req: Request) {
       .eq('cliente_id', cliente.id)
       .select()
       .single()
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) return NextResponse.json({ error: safeSupabaseError('kb_upsert', error).public }, { status: 500 })
     return NextResponse.json({ ok: true, item: data })
   } else {
     const { data, error } = await admin
@@ -122,7 +123,7 @@ export async function POST(req: Request) {
       .insert(payload)
       .select()
       .single()
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) return NextResponse.json({ error: safeSupabaseError('kb_upsert', error).public }, { status: 500 })
     return NextResponse.json({ ok: true, item: data })
   }
 }
@@ -153,6 +154,6 @@ export async function DELETE(req: Request) {
     .eq('id', id)
     .eq('cliente_id', cliente.id)
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return NextResponse.json({ error: safeSupabaseError('kb_delete', error).public }, { status: 500 })
   return NextResponse.json({ ok: true })
 }
