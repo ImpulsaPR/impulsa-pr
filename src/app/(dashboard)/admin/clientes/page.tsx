@@ -351,12 +351,14 @@ function OnboardModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm overflow-y-auto animate-fade-in"
       onClick={(e) => {
         if (e.target === e.currentTarget && !submitting) onClose()
       }}
     >
-      <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="min-h-full flex items-center justify-center p-4">
+        <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-xl my-4 flex flex-col"
+          onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <div>
@@ -379,7 +381,7 @@ function OnboardModal({
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-5">
+        <div className="p-5">
           {success ? (
             <SuccessView data={success} />
           ) : (
@@ -440,6 +442,7 @@ function OnboardModal({
               )}
             </>
           )}
+        </div>
         </div>
       </div>
     </div>
