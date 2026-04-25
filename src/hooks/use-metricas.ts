@@ -113,6 +113,28 @@ export interface MetricasDeltas {
   mensajes_total: number | null
 }
 
+export interface KbTopEntry {
+  id: string
+  category: string | null
+  question: string
+  usage_count: number
+  last_used_at: string | null
+}
+
+export interface KbStats {
+  total_entries: number
+  total_uses: number
+  used_entries: number
+  hit_rate_pct: number // (total_uses / mensajes_recibidos) * 100
+  top: KbTopEntry[]
+}
+
+export interface TakeoverStats {
+  total_events: number
+  unique_telefonos: number
+  pct_conversaciones: number // events / unique conversaciones del periodo
+}
+
 export interface MetricasData {
   resumen: MetricasResumen | null
   embudo: EmbudoEtapa[]
@@ -127,6 +149,8 @@ export interface MetricasData {
   actividadHora: ActividadHora[]
   leadsPorDiaPrev: LeadsPorDia[]
   deltas: MetricasDeltas
+  kb: KbStats | null
+  takeover: TakeoverStats | null
 }
 
 const emptyDeltas: MetricasDeltas = {
@@ -151,6 +175,8 @@ const emptyData: MetricasData = {
   actividadHora: [],
   leadsPorDiaPrev: [],
   deltas: emptyDeltas,
+  kb: null,
+  takeover: null,
 }
 
 function pctDelta(current: number, previous: number): number | null {
@@ -171,8 +197,10 @@ export function useMetricas(rango: Rango = 30) {
 
   const fetchAll = useCallback(async (clienteId: string, dias: Rango) => {
     const supabase = getSupabase()
-    const desde = new Date(Date.now() - dias * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
-    const desdeDoble = new Date(Date.now() - dias * 2 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+    const desdeIso = new Date(Date.now() - dias * 24 * 60 * 60 * 1000).toISOString()
+    const desdeDobleIso = new Date(Date.now() - dias * 2 * 24 * 60 * 60 * 1000).toISOString()
+    const desde = desdeIso.slice(0, 10)
+    const desdeDoble = desdeDobleIso.slice(0, 10)
 
     const [
       resumenRes,
@@ -185,8 +213,13 @@ export function useMetricas(rango: Rango = 30) {
       proximasRes,
       actividadRes,
       rendimientoRes,
-      tiempoRespRes,
-      actividadHoraRes,
+      // Mensajes brutos del cliente (multi-tenant seguro vía RLS) para
+      // calcular tiempo de respuesta y actividad por hora client-side,
+      // sustituyendo a v_tiempo_respuesta y v_actividad_por_hora que NO
+      // tienen columna cliente_id (data leak entre tenants).
+      mensajesRes,
+      kbRes,
+      takeoverRes,
     ] = await Promise.all([
       supabase.rpc('get_metricas_resumen', { p_cliente_id: clienteId, p_dias: dias }),
       supabase.rpc('get_metricas_resumen', { p_cliente_id: clienteId, p_dias: dias * 2 }),
@@ -218,14 +251,22 @@ export function useMetricas(rango: Rango = 30) {
         .limit(30),
       supabase.rpc('get_rendimiento_bot', { p_cliente_id: clienteId, p_dias: dias }),
       supabase
-        .from('v_tiempo_respuesta')
-        .select('*')
-        .gte('fecha', desdeDoble)
-        .order('fecha', { ascending: true }),
+        .from('whatsapp_historial')
+        .select('telefono, rol, created_at')
+        .eq('cliente_id', clienteId)
+        .gte('created_at', desdeDobleIso)
+        .order('created_at', { ascending: true })
+        .limit(20000),
       supabase
-        .from('v_actividad_por_hora')
-        .select('*')
-        .order('hora', { ascending: true }),
+        .from('knowledge_base')
+        .select('id, category, question, usage_count, last_used_at')
+        .eq('cliente_id', clienteId)
+        .order('usage_count', { ascending: false }),
+      supabase
+        .from('human_takeover')
+        .select('telefono, timestamp_takeover')
+        .eq('cliente_id', clienteId)
+        .gte('timestamp_takeover', desdeIso),
     ])
 
     const firstErr =
@@ -239,8 +280,9 @@ export function useMetricas(rango: Rango = 30) {
       proximasRes.error ||
       actividadRes.error ||
       rendimientoRes.error ||
-      tiempoRespRes.error ||
-      actividadHoraRes.error
+      mensajesRes.error ||
+      kbRes.error ||
+      takeoverRes.error
 
     if (firstErr) {
       setError(firstErr.message)
@@ -281,10 +323,47 @@ export function useMetricas(rango: Rango = 30) {
       }
     }
 
-    const tiempoRows = ((tiempoRespRes.data as TiempoRespuestaDia[]) || []).filter(
-      (r): r is TiempoRespuestaDia =>
-        !!r.fecha && r.segundos_promedio_respuesta !== null && r.total_conversaciones !== null
-    )
+    type MsgRow = { telefono: string; rol: string; created_at: string }
+    const mensajes: MsgRow[] = (mensajesRes.data as MsgRow[]) || []
+
+    // ---- Tiempo de respuesta: para cada mensaje del cliente (rol=user)
+    // buscar el siguiente mensaje del bot (rol=assistant) en la misma
+    // conversación y calcular el delta en segundos. Agrupar por día.
+    const conversaciones = new Map<string, MsgRow[]>()
+    for (const m of mensajes) {
+      const arr = conversaciones.get(m.telefono) || []
+      arr.push(m)
+      conversaciones.set(m.telefono, arr)
+    }
+    const responseByDate = new Map<string, { sum: number; count: number }>()
+    for (const arr of conversaciones.values()) {
+      // Mensajes ya vienen ordenados por created_at asc (gracias al order del query).
+      for (let i = 0; i < arr.length - 1; i++) {
+        if (arr[i].rol !== 'user') continue
+        // Buscar la primera respuesta del bot después de este mensaje
+        let j = i + 1
+        while (j < arr.length && arr[j].rol !== 'assistant') j++
+        if (j >= arr.length) break
+        const t1 = new Date(arr[i].created_at).getTime()
+        const t2 = new Date(arr[j].created_at).getTime()
+        const seconds = (t2 - t1) / 1000
+        // Sanitizar: ignorar deltas negativos o > 1h (probablemente sesión rota)
+        if (seconds <= 0 || seconds > 3600) continue
+        const fecha = arr[j].created_at.slice(0, 10)
+        const cur = responseByDate.get(fecha) || { sum: 0, count: 0 }
+        cur.sum += seconds
+        cur.count += 1
+        responseByDate.set(fecha, cur)
+      }
+    }
+    const tiempoRows: TiempoRespuestaDia[] = Array.from(responseByDate.entries())
+      .map(([fecha, v]) => ({
+        fecha,
+        segundos_promedio_respuesta: v.count > 0 ? v.sum / v.count : 0,
+        total_conversaciones: v.count,
+      }))
+      .sort((a, b) => a.fecha.localeCompare(b.fecha))
+
     const cutoff = desde
     const recent = tiempoRows.filter((r) => r.fecha >= cutoff)
     const previous = tiempoRows.filter((r) => r.fecha < cutoff)
@@ -309,6 +388,78 @@ export function useMetricas(rango: Rango = 30) {
           }
         : null
 
+    // ---- Actividad por hora local: distribuir mensajes del periodo
+    // ACTUAL (no doble) en buckets horarios 0-23 según la zona local
+    // del navegador.
+    const horaBuckets: ActividadHora[] = Array.from({ length: 24 }, (_, h) => ({
+      hora: h,
+      msgs_bot: 0,
+      msgs_clientes: 0,
+      total_mensajes: 0,
+    }))
+    const desdeMs = new Date(desdeIso).getTime()
+    for (const m of mensajes) {
+      const ts = new Date(m.created_at).getTime()
+      if (ts < desdeMs) continue
+      const h = new Date(m.created_at).getHours()
+      const bucket = horaBuckets[h]
+      if (m.rol === 'assistant') bucket.msgs_bot += 1
+      else if (m.rol === 'user') bucket.msgs_clientes += 1
+      bucket.total_mensajes = bucket.msgs_bot + bucket.msgs_clientes
+    }
+    const actividadHora = horaBuckets.filter((b) => b.total_mensajes > 0)
+
+    // ---- Knowledge Base stats
+    type KbRow = {
+      id: string
+      category: string | null
+      question: string | null
+      usage_count: number | null
+      last_used_at: string | null
+    }
+    const kbRows: KbRow[] = (kbRes.data as KbRow[]) || []
+    const totalKbUses = kbRows.reduce((s, r) => s + (r.usage_count || 0), 0)
+    const usedKb = kbRows.filter((r) => (r.usage_count || 0) > 0).length
+    const mensajesRecibidos = (resumenRow?.mensajes_recibidos as number | undefined) ?? 0
+    const kbStats: KbStats | null =
+      kbRows.length > 0
+        ? {
+            total_entries: kbRows.length,
+            total_uses: totalKbUses,
+            used_entries: usedKb,
+            hit_rate_pct:
+              mensajesRecibidos > 0
+                ? Math.round((totalKbUses / mensajesRecibidos) * 1000) / 10
+                : 0,
+            top: kbRows
+              .slice(0, 5)
+              .map((r) => ({
+                id: r.id,
+                category: r.category,
+                question: r.question || '—',
+                usage_count: r.usage_count || 0,
+                last_used_at: r.last_used_at,
+              })),
+          }
+        : null
+
+    // ---- Takeover stats: # eventos en el periodo + # conversaciones
+    // únicas en que se activó vs # conversaciones únicas con mensajes
+    type TakeRow = { telefono: string; timestamp_takeover: string }
+    const takeoverRows: TakeRow[] = (takeoverRes.data as TakeRow[]) || []
+    const telefonosTakeover = new Set(takeoverRows.map((r) => r.telefono))
+    const telefonosPeriodo = new Set(
+      mensajes.filter((m) => new Date(m.created_at).getTime() >= desdeMs).map((m) => m.telefono)
+    )
+    const takeover: TakeoverStats = {
+      total_events: takeoverRows.length,
+      unique_telefonos: telefonosTakeover.size,
+      pct_conversaciones:
+        telefonosPeriodo.size > 0
+          ? Math.round((telefonosTakeover.size / telefonosPeriodo.size) * 1000) / 10
+          : 0,
+    }
+
     const leadsDiaAll = (leadsDiaRes.data as LeadsPorDia[]) || []
     const leadsDiaCurrent = leadsDiaAll.filter((r) => r.fecha >= desde)
     const leadsDiaPrev = leadsDiaAll.filter((r) => r.fecha < desde)
@@ -325,11 +476,10 @@ export function useMetricas(rango: Rango = 30) {
       actividad: (actividadRes.data as ActividadItem[]) || [],
       rendimientoBot: rendimientoRow,
       tiempoRespuesta,
-      actividadHora: ((actividadHoraRes.data as ActividadHora[]) || []).filter(
-        (r): r is ActividadHora =>
-          r.hora !== null && r.hora !== undefined && r.total_mensajes !== null
-      ),
+      actividadHora,
       deltas,
+      kb: kbStats,
+      takeover,
     })
     setError(null)
   }, [])
@@ -360,7 +510,16 @@ export function useMetricas(rango: Rango = 30) {
     }
 
     const filter = `cliente_id=eq.${cliente.id}`
-    for (const table of ['leads', 'citas', 'mensajes'] as const) {
+    // Tablas reales: 'mensajes' no existe; el log de WhatsApp vive en
+    // whatsapp_historial. human_takeover dispara recálculo de takeover
+    // y knowledge_base actualiza usage_count en cada hit del bot.
+    for (const table of [
+      'leads',
+      'citas',
+      'whatsapp_historial',
+      'human_takeover',
+      'knowledge_base',
+    ] as const) {
       channel.on(
         'postgres_changes' as never,
         { event: '*', schema: 'public', table, filter },

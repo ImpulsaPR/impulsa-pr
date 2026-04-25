@@ -55,8 +55,10 @@ import { GoalCard } from '@/components/analytics/goal-card'
 import { InsightsCard } from '@/components/analytics/insights-card'
 import { ExportMenu } from '@/components/analytics/export-menu'
 import { LeadsHeatmap } from '@/components/analytics/leads-heatmap'
+import { KbUsageCard } from '@/components/analytics/kb-usage-card'
 import { toCSV, downloadBlob, stampDate } from '@/lib/export'
 import { EmptyState } from '@/components/analytics/empty-state'
+import { BookOpen } from 'lucide-react'
 
 const COLD_THRESHOLD_HOURS = 48
 
@@ -192,10 +194,16 @@ export default function AnalyticsPage() {
   }, [data.estadoCitas])
 
   const takeoverPct = useMemo(() => {
+    // Preferir las stats agregadas del periodo (basadas en human_takeover) que
+    // capturan eventos históricos. Fallback al snapshot actual si la tabla
+    // todavía no devolvió data.
+    if (data.takeover && data.takeover.unique_telefonos > 0) {
+      return data.takeover.pct_conversaciones
+    }
     if (leads.length === 0) return null
     const takeover = leads.filter((l) => l.humano_activo).length
     return (takeover / leads.length) * 100
-  }, [leads])
+  }, [leads, data.takeover])
 
   const revenue = useMemo(() => {
     const openLeads = leads.filter((l) => l.estado !== 'cerrado')
@@ -273,6 +281,11 @@ export default function AnalyticsPage() {
       { metric: 'no_show_pct', value: +noShowRate.toFixed(2) },
       { metric: 'tiempo_respuesta_seg', value: data.tiempoRespuesta?.avg_segundos ?? null },
       { metric: 'takeover_pct', value: takeoverPct !== null ? +takeoverPct.toFixed(2) : null },
+      { metric: 'takeover_eventos', value: data.takeover?.total_events ?? 0 },
+      { metric: 'kb_total_uses', value: data.kb?.total_uses ?? 0 },
+      { metric: 'kb_hit_rate_pct', value: data.kb?.hit_rate_pct ?? 0 },
+      { metric: 'kb_coverage_used', value: data.kb?.used_entries ?? 0 },
+      { metric: 'kb_coverage_total', value: data.kb?.total_entries ?? 0 },
     ]
     const csv = toCSV(rows, [
       { key: 'metric', label: 'metric' },
@@ -625,6 +638,38 @@ export default function AnalyticsPage() {
             }}
           />
         </div>
+      </div>
+
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <BookOpen className="w-4 h-4 text-primary" />
+          <h2 className="text-sm font-semibold tracking-wide uppercase text-muted">
+            {t('analytics.kb.sectionTitle')}
+          </h2>
+        </div>
+        <KbUsageCard
+          data={data.kb}
+          locale={locale}
+          onSelectEntry={(id) => router.push(`/knowledge?id=${encodeURIComponent(id)}`)}
+          labels={{
+            title: t('analytics.kb.title'),
+            subtitle: t('analytics.kb.subtitle'),
+            hitRate: t('analytics.kb.hitRate'),
+            hitRateHint: t('analytics.kb.hitRateHint'),
+            totalUses: t('analytics.kb.totalUses'),
+            totalUsesHint: t('analytics.kb.totalUsesHint'),
+            coverage: t('analytics.kb.coverage'),
+            coverageHint: t('analytics.kb.coverageHint'),
+            topTitle: t('analytics.kb.topTitle'),
+            topSubtitle: t('analytics.kb.topSubtitle'),
+            uses: t('analytics.kb.uses'),
+            lastUsed: t('analytics.kb.lastUsed'),
+            never: t('analytics.kb.never'),
+            empty: t('analytics.kb.empty'),
+            emptyHint: t('analytics.kb.emptyHint'),
+            unused: t('analytics.kb.unused'),
+          }}
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
