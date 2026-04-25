@@ -154,13 +154,13 @@ export default function ConversationsPage() {
   }
 
   return (
-    <div className="space-y-5">
-      <div>
+    <div className="h-[calc(100dvh-160px)] flex flex-col gap-5 overflow-hidden">
+      <div className="flex-shrink-0">
         <h1 className="text-2xl font-bold tracking-tight">{t('conversations.title')}</h1>
         <p className="text-sm text-muted mt-1">{t('conversations.subtitle')}</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 h-[calc(100dvh-200px)] max-h-[780px]">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 flex-1 min-h-0">
         {/* Lista — siempre visible en lg+, oculta en mobile cuando hay seleccion */}
         <div
           className={`lg:col-span-1 h-full ${
