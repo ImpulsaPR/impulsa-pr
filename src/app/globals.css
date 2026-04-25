@@ -368,6 +368,31 @@ html.light .animate-shimmer {
   animation: shimmer-smooth 2s ease-in-out infinite;
 }
 
+/* ===== CONVERSATIONS — scrollbar custom (thin, primary tint) ===== */
+.convo-scroll {
+  scrollbar-width: thin;
+}
+.convo-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.convo-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.convo-scroll::-webkit-scrollbar-thumb {
+  background: oklch(0.58 0.14 165 / 0.2);
+  border-radius: 999px;
+}
+.convo-scroll::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.58 0.14 165 / 0.35);
+}
+html.dark .convo-scroll {
+  scrollbar-color: oklch(0.58 0.14 165 / 0.25) transparent;
+}
+html.light .convo-scroll {
+  scrollbar-color: oklch(0.50 0.11 165 / 0.25) transparent;
+}
+
 /* ===== PRINT ===== */
 @media print {
   .print-hide,
