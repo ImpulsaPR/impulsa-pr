@@ -10,6 +10,7 @@ import { useTheme } from '@/lib/theme'
 import { useTranslation } from '@/lib/i18n'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { Locale } from '@/lib/i18n'
+import { BotConfigSection } from './bot-config-section'
 
 interface ToggleItem {
   key: string
@@ -273,6 +274,9 @@ export default function SettingsPage() {
           </div>
         )}
       </div>
+
+      {/* Bot Configuration */}
+      <BotConfigSection t={t} />
 
       {/* Notifications */}
       <div className="rounded-2xl border border-border bg-card p-6 theme-transition">
