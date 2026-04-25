@@ -151,6 +151,9 @@ export function QuasarChat() {
     if (detected) {
       nextIndustry = detected
       queued.push({ id: uid(), role: 'system', text: `— Cambio de contexto · ${industries[detected].label} —` })
+      // Pre-mark the ref so the industry-change effect skips its reset and
+      // does not wipe the user message we are about to enqueue.
+      lastIndustryRef.current = detected
       setIndustry(detected)
     }
     queued.push({ id: uid(), role: 'user', text: trimmed })
