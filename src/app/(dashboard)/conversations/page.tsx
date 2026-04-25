@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Bot, MessageSquare, User, Search, ShieldCheck, ShieldAlert, Loader2 } from 'lucide-react'
+import { Bot, MessageSquare, User, Search, ShieldCheck, ShieldAlert, Loader2, Send } from 'lucide-react'
 import { useConversations } from '@/hooks/use-conversations'
 import { getSupabase } from '@/lib/supabase'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -16,8 +16,35 @@ export default function ConversationsPage() {
   const [selectedPhone, setSelectedPhone] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [toggling, setToggling] = useState(false)
+  const [draft, setDraft] = useState('')
+  const [sending, setSending] = useState(false)
   const { toast } = useToast()
   const { t } = useTranslation()
+
+  const handleSend = async () => {
+    const msg = draft.trim()
+    if (!msg || !selected) return
+    setSending(true)
+    try {
+      const res = await fetch('/api/whatsapp/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ telefono: selected.telefono, mensaje: msg }),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        toast(json.error || 'Error al enviar', 'error')
+      } else {
+        setDraft('')
+        toast('Mensaje enviado')
+        refetch()
+      }
+    } catch (e) {
+      toast('Error de red al enviar', 'error')
+    } finally {
+      setSending(false)
+    }
+  }
 
   const filtered = conversations.filter((c) => {
     if (!search) return true
@@ -238,13 +265,40 @@ export default function ConversationsPage() {
                 })}
               </div>
 
-              {/* Control bar */}
-              <div className="p-4 border-t border-border">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-xs text-muted">
-                    <MessageSquare className="w-3.5 h-3.5" />
-                    <span>{t('conversations.readOnly')}</span>
-                  </div>
+              {/* Compose + control bar */}
+              <div className="border-t border-border">
+                <div className="flex items-end gap-2 p-3">
+                  <textarea
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault()
+                        handleSend()
+                      }
+                    }}
+                    placeholder="Escribe un mensaje... (Enter para enviar, Shift+Enter salto de línea)"
+                    rows={2}
+                    disabled={sending}
+                    className="flex-1 resize-none rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted outline-none focus:border-primary/40 disabled:opacity-50"
+                  />
+                  <button
+                    onClick={handleSend}
+                    disabled={sending || !draft.trim()}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium bg-primary text-white hover:bg-primary/90 transition-all duration-200 active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {sending ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Send className="w-3.5 h-3.5" />
+                    )}
+                    {sending ? 'Enviando...' : 'Enviar'}
+                  </button>
+                </div>
+                <div className="flex items-center justify-between px-4 pb-3">
+                  <p className="text-[10px] text-muted">
+                    Enviar registra takeover (bot pausado 6h)
+                  </p>
                   <button
                     onClick={async () => {
                       if (!selected?.lead) {
@@ -269,18 +323,18 @@ export default function ConversationsPage() {
                       }
                     }}
                     disabled={toggling || !selected.lead}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-medium transition-all duration-200 active:scale-[0.97] disabled:opacity-50 ${
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-medium transition-all duration-200 active:scale-[0.97] disabled:opacity-50 ${
                       selected.lead?.humano_activo
                         ? 'bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20'
                         : 'bg-accent-orange/10 text-accent-orange border border-accent-orange/20 hover:bg-accent-orange/20'
                     }`}
                   >
                     {toggling ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <Loader2 className="w-3 h-3 animate-spin" />
                     ) : selected.lead?.humano_activo ? (
-                      <ShieldCheck className="w-3.5 h-3.5" />
+                      <ShieldCheck className="w-3 h-3" />
                     ) : (
-                      <ShieldAlert className="w-3.5 h-3.5" />
+                      <ShieldAlert className="w-3 h-3" />
                     )}
                     {selected.lead?.humano_activo
                       ? t('conversations.switchToAI')
