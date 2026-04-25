@@ -44,6 +44,39 @@ export function useKnowledgeBase() {
       return
     }
     fetchAll(cliente.id)
+
+    // Realtime: actualiza contador de uso cuando el bot consulta KB
+    const supabase = getSupabase()
+    const channel = supabase
+      .channel(`kb-rt-${cliente.id}-${Math.random().toString(36).slice(2)}`)
+      .on(
+        'postgres_changes' as never,
+        {
+          event: '*',
+          schema: 'public',
+          table: 'knowledge_base',
+          filter: `cliente_id=eq.${cliente.id}`,
+        },
+        (payload: { eventType: string; new?: KbEntry; old?: KbEntry }) => {
+          if (payload.eventType === 'INSERT' && payload.new) {
+            setEntries((prev) => {
+              if (prev.some((e) => e.id === payload.new!.id)) return prev
+              return [payload.new!, ...prev]
+            })
+          } else if (payload.eventType === 'UPDATE' && payload.new) {
+            setEntries((prev) =>
+              prev.map((e) => (e.id === payload.new!.id ? payload.new! : e))
+            )
+          } else if (payload.eventType === 'DELETE' && payload.old) {
+            setEntries((prev) => prev.filter((e) => e.id !== payload.old!.id))
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [cliente, clienteLoading, fetchAll])
 
   const upsert = useCallback(

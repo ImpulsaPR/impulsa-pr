@@ -28,21 +28,30 @@ export default function KnowledgePage() {
   const { entries, loading, upsert, remove } = useKnowledgeBase()
   const [search, setSearch] = useState('')
   const [filterCat, setFilterCat] = useState<string | null>(null)
+  const [sortBy, setSortBy] = useState<'recent' | 'usage'>('recent')
   const [editing, setEditing] = useState<FormState | null>(null)
   const [saving, setSaving] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
   const { toast } = useToast()
 
-  const filtered = entries.filter((e) => {
-    if (filterCat && e.category !== filterCat) return false
-    if (!search) return true
-    const q = search.toLowerCase()
-    return (
-      e.question.toLowerCase().includes(q) ||
-      e.answer.toLowerCase().includes(q) ||
-      (e.tags?.some((t) => t.toLowerCase().includes(q)) ?? false)
-    )
-  })
+  const filtered = entries
+    .filter((e) => {
+      if (filterCat && e.category !== filterCat) return false
+      if (!search) return true
+      const q = search.toLowerCase()
+      return (
+        e.question.toLowerCase().includes(q) ||
+        e.answer.toLowerCase().includes(q) ||
+        (e.tags?.some((t) => t.toLowerCase().includes(q)) ?? false)
+      )
+    })
+    .sort((a, b) => {
+      if (sortBy === 'usage') {
+        if (b.usage_count !== a.usage_count) return b.usage_count - a.usage_count
+        return (b.last_used_at || b.updated_at).localeCompare(a.last_used_at || a.updated_at)
+      }
+      return b.updated_at.localeCompare(a.updated_at)
+    })
 
   const handleSave = async () => {
     if (!editing) return
@@ -150,6 +159,28 @@ export default function KnowledgePage() {
               {c.emoji} {c.label}
             </button>
           ))}
+        </div>
+        <div className="ml-auto flex items-center gap-1 rounded-lg bg-card border border-border p-1">
+          <button
+            onClick={() => setSortBy('recent')}
+            className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+              sortBy === 'recent'
+                ? 'bg-foreground text-background'
+                : 'text-muted hover:text-foreground'
+            }`}
+          >
+            Recientes
+          </button>
+          <button
+            onClick={() => setSortBy('usage')}
+            className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+              sortBy === 'usage'
+                ? 'bg-foreground text-background'
+                : 'text-muted hover:text-foreground'
+            }`}
+          >
+            Más usadas
+          </button>
         </div>
       </div>
 
@@ -354,11 +385,42 @@ function KbCard({
         {entry.question}
       </h3>
       <p className="text-xs text-muted leading-relaxed line-clamp-3">{entry.answer}</p>
-      {entry.usage_count > 0 && (
-        <p className="text-[10px] text-muted/70 mt-3">
-          Usado {entry.usage_count} {entry.usage_count === 1 ? 'vez' : 'veces'}
-        </p>
+      {(entry.usage_count > 0 || entry.last_used_at) && (
+        <div className="flex items-center gap-2 mt-3 pt-2.5 border-t border-border/50">
+          {entry.usage_count > 0 && (
+            <span
+              className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-medium ${
+                entry.usage_count >= 10
+                  ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
+                  : entry.usage_count >= 3
+                  ? 'bg-primary/10 text-primary border border-primary/20'
+                  : 'bg-background text-muted border border-border'
+              }`}
+              title={`Usado ${entry.usage_count} ${entry.usage_count === 1 ? 'vez' : 'veces'}`}
+            >
+              {entry.usage_count >= 10 ? '🔥 ' : ''}
+              {entry.usage_count}× usado
+            </span>
+          )}
+          {entry.last_used_at && (
+            <span className="text-[10px] text-muted/70">
+              hace {timeAgo(entry.last_used_at)}
+            </span>
+          )}
+        </div>
       )}
     </div>
   )
+}
+
+function timeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime()
+  const m = Math.floor(diff / 60000)
+  if (m < 1) return 'unos segundos'
+  if (m < 60) return `${m} min`
+  const h = Math.floor(m / 60)
+  if (h < 24) return `${h}h`
+  const d = Math.floor(h / 24)
+  if (d < 30) return `${d}d`
+  return `${Math.floor(d / 30)} meses`
 }
