@@ -11,6 +11,7 @@ import { useTranslation } from '@/lib/i18n'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { Locale } from '@/lib/i18n'
 import { BotConfigSection } from './bot-config-section'
+import { GoogleCalendarSection } from './google-calendar-section'
 
 interface ToggleItem {
   key: string
@@ -277,6 +278,9 @@ export default function SettingsPage() {
 
       {/* Bot Configuration */}
       <BotConfigSection t={t} />
+
+      {/* Google Calendar Connection */}
+      <GoogleCalendarSection />
 
       {/* Notifications */}
       <div className="rounded-2xl border border-border bg-card p-6 theme-transition">
