@@ -6,6 +6,19 @@ export async function proxy(request: NextRequest) {
     request: { headers: request.headers },
   })
 
+  // Skip API routes entirely — they manage auth themselves (Supabase SSR
+  // session for user-facing, x-proxy-token for n8n, super-admin email
+  // check for admin endpoints). Without this skip, /api/* gets 307 to
+  // /login which breaks every external integration.
+  if (request.nextUrl.pathname.startsWith('/api/')) {
+    return response
+  }
+
+  // Skip OAuth callback and auth flow paths
+  if (request.nextUrl.pathname.startsWith('/auth/')) {
+    return response
+  }
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
