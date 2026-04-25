@@ -46,13 +46,16 @@ export async function POST(req: Request) {
 
   try {
     switch (body.operation) {
+      // For create/update/get/search, return data shaped EXACTLY like Google
+      // Calendar API would, so n8n downstream nodes that previously consumed
+      // the GoogleCal node response continue to work without changes.
       case 'create': {
         if (!body.event) return NextResponse.json({ error: 'event requerido' }, { status: 400 })
         const result = await calendarCreate(body.cliente_id, body.event, {
           sendUpdates: body.send_updates,
           conferenceDataVersion: body.event.conferenceData ? 1 : 0,
         })
-        return NextResponse.json({ ok: true, event: result })
+        return NextResponse.json(result)
       }
 
       case 'update': {
@@ -61,7 +64,7 @@ export async function POST(req: Request) {
         const result = await calendarUpdate(body.cliente_id, body.event_id, body.patch, {
           sendUpdates: body.send_updates,
         })
-        return NextResponse.json({ ok: true, event: result })
+        return NextResponse.json(result)
       }
 
       case 'delete': {
@@ -70,14 +73,14 @@ export async function POST(req: Request) {
         await calendarDelete(body.cliente_id, body.event_id, {
           sendUpdates: body.send_updates,
         })
-        return NextResponse.json({ ok: true })
+        return NextResponse.json({})
       }
 
       case 'get': {
         if (!body.event_id)
           return NextResponse.json({ error: 'event_id requerido' }, { status: 400 })
         const result = await calendarGet(body.cliente_id, body.event_id)
-        return NextResponse.json({ ok: true, event: result })
+        return NextResponse.json(result)
       }
 
       case 'search': {
@@ -88,7 +91,8 @@ export async function POST(req: Request) {
           max_results: body.max_results,
           single_events: body.single_events,
         })
-        return NextResponse.json({ ok: true, items: result.items })
+        // Return array directly so the splitter Code node in n8n works
+        return NextResponse.json(result.items)
       }
 
       default:
