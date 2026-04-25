@@ -3,7 +3,16 @@
 import { useEffect, useState } from 'react'
 import { getSupabase } from '@/lib/supabase'
 
-const SUPERADMIN_EMAIL = process.env.NEXT_PUBLIC_SUPERADMIN_EMAIL || ''
+// Lista de emails super-admin. Hardcoded como fallback robusto en caso
+// de que NEXT_PUBLIC_SUPERADMIN_EMAIL no haya sido incluido en el build.
+const HARDCODED_SUPERADMINS = ['info@impulsapr.com']
+const ENV_SUPERADMIN = process.env.NEXT_PUBLIC_SUPERADMIN_EMAIL || ''
+
+const ALLOWED_ADMINS = new Set(
+  [...HARDCODED_SUPERADMINS, ENV_SUPERADMIN]
+    .filter(Boolean)
+    .map((e) => e.toLowerCase())
+)
 
 interface UseAdminResult {
   isSuperAdmin: boolean
@@ -28,7 +37,7 @@ export function useAdmin(): UseAdminResult {
     }
   }, [])
 
-  const isSuperAdmin = !!email && !!SUPERADMIN_EMAIL && email.toLowerCase() === SUPERADMIN_EMAIL.toLowerCase()
+  const isSuperAdmin = !!email && ALLOWED_ADMINS.has(email.toLowerCase())
 
   return { isSuperAdmin, loading, email }
 }

@@ -6,7 +6,10 @@ export const runtime = 'nodejs'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
-const SUPERADMIN_EMAIL = (process.env.SUPERADMIN_EMAIL || '').toLowerCase()
+const ADMIN_EMAILS = new Set([
+  ...(process.env.SUPERADMIN_EMAIL ? [process.env.SUPERADMIN_EMAIL.toLowerCase()] : []),
+  'info@impulsapr.com',
+])
 
 interface ClienteRow {
   id: string
@@ -22,7 +25,7 @@ export async function GET() {
   const supabase = await createSupabaseServer()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  if ((user.email || '').toLowerCase() !== SUPERADMIN_EMAIL) {
+  if (!ADMIN_EMAILS.has((user.email || '').toLowerCase())) {
     return NextResponse.json({ error: 'forbidden' }, { status: 403 })
   }
 

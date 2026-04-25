@@ -6,7 +6,10 @@ export const runtime = 'nodejs'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
-const SUPERADMIN_EMAIL = (process.env.SUPERADMIN_EMAIL || '').toLowerCase()
+const ADMIN_EMAILS = new Set([
+  ...(process.env.SUPERADMIN_EMAIL ? [process.env.SUPERADMIN_EMAIL.toLowerCase()] : []),
+  'info@impulsapr.com',
+])
 
 // Webhook url fija — n8n routea por número de teléfono, no por path
 const N8N_WEBHOOK_URL = 'https://n8n.impulsapr.com/webhook/bot-whatsapp'
@@ -51,9 +54,7 @@ export async function POST(req: Request) {
   if (!SUPABASE_SERVICE_KEY || !SUPABASE_URL) {
     return NextResponse.json({ error: 'supabase no configurado' }, { status: 500 })
   }
-  if (!SUPERADMIN_EMAIL) {
-    return NextResponse.json({ error: 'SUPERADMIN_EMAIL no configurado' }, { status: 500 })
-  }
+  // ADMIN_EMAILS siempre tiene fallback hardcoded
 
   // 1. Auth: super-admin only
   const supabase = await createSupabaseServer()
@@ -61,7 +62,7 @@ export async function POST(req: Request) {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  if ((user.email || '').toLowerCase() !== SUPERADMIN_EMAIL) {
+  if (!ADMIN_EMAILS.has((user.email || '').toLowerCase())) {
     return NextResponse.json({ error: 'forbidden' }, { status: 403 })
   }
 
