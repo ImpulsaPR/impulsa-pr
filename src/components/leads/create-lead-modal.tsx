@@ -6,6 +6,7 @@ import { getSupabase } from '@/lib/supabase'
 import { getCurrentCliente } from '@/lib/get-current-cliente'
 import { useToast } from '@/components/ui/toast'
 import { useTranslation } from '@/lib/i18n'
+import { Portal } from '@/components/ui/portal'
 
 interface CreateLeadModalProps {
   open: boolean
@@ -87,7 +88,8 @@ export function CreateLeadModal({ open, onClose, onCreated }: CreateLeadModalPro
   const inputClass = 'w-full rounded-xl border border-border bg-background pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted outline-none focus:border-foreground/30 focus:ring-1 focus:ring-foreground/10 transition-all'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <Portal>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center">
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in"
         onClick={onClose}
@@ -195,5 +197,6 @@ export function CreateLeadModal({ open, onClose, onCreated }: CreateLeadModalPro
         )}
       </div>
     </div>
+    </Portal>
   )
 }

@@ -1,6 +1,7 @@
 'use client'
 
 import { AlertTriangle, Loader2 } from 'lucide-react'
+import { Portal } from './portal'
 
 interface ConfirmModalProps {
   open: boolean
@@ -26,6 +27,7 @@ export function ConfirmModal({
   if (!open) return null
 
   return (
+    <Portal>
     <div className="fixed inset-0 z-[55] flex items-center justify-center">
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in"
@@ -64,5 +66,6 @@ export function ConfirmModal({
         </div>
       </div>
     </div>
+    </Portal>
   )
 }

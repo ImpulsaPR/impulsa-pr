@@ -5,6 +5,7 @@ import { Search, X, Users, MessageSquare, ArrowRight } from 'lucide-react'
 import { useLeads } from '@/hooks/use-leads'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n'
+import { Portal } from '@/components/ui/portal'
 
 interface CommandSearchProps {
   open: boolean
@@ -46,7 +47,8 @@ export function CommandSearch({ open, onClose }: CommandSearchProps) {
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-start justify-center pt-[15vh]">
+    <Portal>
+    <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[15vh]">
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in"
         onClick={onClose}
@@ -140,5 +142,6 @@ export function CommandSearch({ open, onClose }: CommandSearchProps) {
         )}
       </div>
     </div>
+    </Portal>
   )
 }

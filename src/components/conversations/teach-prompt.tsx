@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Sparkles, X, Loader2, Save, Check } from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
+import { Portal } from '@/components/ui/portal'
 
 const CATEGORIES = [
   { value: 'correccion', label: '✏️ Corrección' },
@@ -46,6 +47,7 @@ export function TeachPrompt({ context, onDismiss }: TeachPromptProps) {
 
   return (
     <>
+      <Portal>
       <AnimatePresence>
         {context && !modalOpen && (
           <motion.div
@@ -94,6 +96,7 @@ export function TeachPrompt({ context, onDismiss }: TeachPromptProps) {
           </motion.div>
         )}
       </AnimatePresence>
+      </Portal>
 
       {context && modalOpen && (
         <TeachModal
@@ -154,8 +157,9 @@ function TeachModal({ context, onClose }: TeachModalProps) {
   }
 
   return (
+    <Portal>
     <div
-      className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
+      className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
       onClick={() => !saving && onClose()}
     >
       <motion.div
@@ -270,5 +274,6 @@ function TeachModal({ context, onClose }: TeachModalProps) {
         </div>
       </motion.div>
     </div>
+    </Portal>
   )
 }

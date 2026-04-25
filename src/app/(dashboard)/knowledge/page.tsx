@@ -5,6 +5,7 @@ import { Plus, Trash2, Pencil, BookOpen, Search, Loader2, X, Save } from 'lucide
 import { useKnowledgeBase, type KbEntry } from '@/hooks/use-knowledge-base'
 import { useToast } from '@/components/ui/toast'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Portal } from '@/components/ui/portal'
 
 const CATEGORIES = [
   { value: 'faq', label: 'FAQ', emoji: '❓' },
@@ -219,8 +220,9 @@ export default function KnowledgePage() {
 
       {/* Edit modal */}
       {editing && (
+        <Portal>
         <div
-          className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
           onClick={() => !saving && setEditing(null)}
         >
           <div
@@ -310,12 +312,14 @@ export default function KnowledgePage() {
             </div>
           </div>
         </div>
+        </Portal>
       )}
 
       {/* Delete confirm */}
       {confirmDelete && (
+        <Portal>
         <div
-          className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
           onClick={() => setConfirmDelete(null)}
         >
           <div
@@ -343,6 +347,7 @@ export default function KnowledgePage() {
             </div>
           </div>
         </div>
+        </Portal>
       )}
     </div>
   )

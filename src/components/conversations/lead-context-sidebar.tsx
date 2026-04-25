@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { getSupabase } from '@/lib/supabase'
+import { Portal } from '@/components/ui/portal'
 import type { Lead } from '@/lib/types'
 
 interface CitaRow {
@@ -73,6 +74,7 @@ export function LeadContextSidebar({ lead, phone, open, onClose }: LeadContextSi
   }, [open, phone])
 
   return (
+    <Portal>
     <AnimatePresence>
       {open && (
         <>
@@ -267,6 +269,7 @@ export function LeadContextSidebar({ lead, phone, open, onClose }: LeadContextSi
         </>
       )}
     </AnimatePresence>
+    </Portal>
   )
 }
 
