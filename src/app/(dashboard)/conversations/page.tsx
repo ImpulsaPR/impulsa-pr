@@ -2,33 +2,43 @@
 
 import { useState } from 'react'
 import { Bot, MessageSquare, User, Search, ShieldCheck, ShieldAlert, Loader2 } from 'lucide-react'
-import { useLeads } from '@/hooks/use-leads'
+import { useConversations } from '@/hooks/use-conversations'
 import { getSupabase } from '@/lib/supabase'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/components/ui/toast'
 import { useTranslation } from '@/lib/i18n'
 
+const PROSPECT_ROLES = new Set(['user', 'prospecto', 'cliente'])
+const BOT_ROLES = new Set(['assistant', 'bot', 'ai'])
+
 export default function ConversationsPage() {
-  const { leads, loading, refetch } = useLeads()
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const { conversations, messagesByPhone, loading, refetch } = useConversations()
+  const [selectedPhone, setSelectedPhone] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [toggling, setToggling] = useState(false)
   const { toast } = useToast()
   const { t } = useTranslation()
 
-  const withMessages = leads.filter((l) => {
-    if (l.historial_mensajes?.length === 0) return false
+  const filtered = conversations.filter((c) => {
     if (!search) return true
     const q = search.toLowerCase()
-    return l.nombre.toLowerCase().includes(q) || l.telefono.includes(q)
+    const name = c.lead?.nombre?.toLowerCase() || ''
+    return name.includes(q) || c.telefono.includes(q)
   })
-  const selected = selectedId
-    ? withMessages.find((l) => l.id === selectedId) || withMessages[0]
-    : withMessages[0]
+
+  const selected = selectedPhone
+    ? filtered.find((c) => c.telefono === selectedPhone) || filtered[0]
+    : filtered[0]
+
+  const selectedMessages = selected ? messagesByPhone(selected.telefono) : []
+
+  const displayName = (c: { lead: { nombre?: string } | null; telefono: string }) =>
+    c.lead?.nombre || `+${c.telefono}`
 
   const timeAgo = (iso: string) => {
     const diff = Date.now() - new Date(iso).getTime()
     const mins = Math.floor(diff / 60000)
+    if (mins < 1) return 'ahora'
     if (mins < 60) return `${mins} min`
     const hrs = Math.floor(mins / 60)
     if (hrs < 24) return `${hrs}h`
@@ -40,7 +50,13 @@ export default function ConversationsPage() {
   }
 
   const getInitials = (name: string) =>
-    name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+    name
+      .replace(/^\+/, '')
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase()
 
   if (loading) {
     return (
@@ -61,9 +77,7 @@ export default function ConversationsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">{t('conversations.title')}</h1>
-        <p className="text-sm text-muted mt-1">
-          {t('conversations.subtitle')}
-        </p>
+        <p className="text-sm text-muted mt-1">{t('conversations.subtitle')}</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -83,37 +97,34 @@ export default function ConversationsPage() {
           </div>
 
           <div className="divide-y divide-border/50 max-h-[550px] overflow-y-auto">
-            {withMessages.length === 0 && (
+            {filtered.length === 0 && (
               <p className="text-sm text-muted text-center py-8">{t('conversations.noConversations')}</p>
             )}
-            {withMessages.map((lead) => {
-              const isActive = selected?.id === lead.id
-              const isAI = !lead.humano_activo
+            {filtered.map((conv) => {
+              const isActive = selected?.telefono === conv.telefono
+              const isAI = !conv.lead?.humano_activo
+              const name = displayName(conv)
 
               return (
                 <div
-                  key={lead.id}
-                  onClick={() => setSelectedId(lead.id)}
+                  key={conv.telefono}
+                  onClick={() => setSelectedPhone(conv.telefono)}
                   className={`p-4 cursor-pointer transition-all duration-200 hover:bg-card-hover ${
                     isActive ? 'bg-card-hover' : ''
                   }`}
                 >
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 rounded-full bg-border/50 flex items-center justify-center text-sm font-medium text-foreground flex-shrink-0">
-                      {getInitials(lead.nombre)}
+                      {getInitials(name)}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-foreground">
-                          {lead.nombre}
-                        </span>
-                        <span className="text-[10px] text-muted">
-                          {timeAgo(lead.fecha_ultimo_contacto)}
+                        <span className="text-sm font-medium text-foreground truncate">{name}</span>
+                        <span className="text-[10px] text-muted whitespace-nowrap ml-2">
+                          {timeAgo(conv.lastTimestamp)}
                         </span>
                       </div>
-                      <p className="text-xs text-muted truncate mt-0.5">
-                        {lead.ultimo_mensaje || t('conversations.noMessages')}
-                      </p>
+                      <p className="text-xs text-muted truncate mt-0.5">{conv.lastMessage}</p>
                       <div className="flex items-center gap-2 mt-1.5">
                         <span
                           className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium border ${
@@ -125,6 +136,7 @@ export default function ConversationsPage() {
                           {isAI ? <Bot className="w-3 h-3" /> : <User className="w-3 h-3" />}
                           {isAI ? t('conversations.aiManaging') : t('conversations.humanActive')}
                         </span>
+                        <span className="text-[9px] text-muted">{conv.messageCount} msg</span>
                       </div>
                     </div>
                   </div>
@@ -142,27 +154,39 @@ export default function ConversationsPage() {
               <div className="flex items-center justify-between p-4 border-b border-border">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-border/50 flex items-center justify-center text-sm font-medium">
-                    {getInitials(selected.nombre)}
+                    {getInitials(displayName(selected))}
                   </div>
                   <div>
-                    <p className="text-sm font-medium">{selected.nombre}</p>
+                    <p className="text-sm font-medium">{displayName(selected)}</p>
                     <div className="flex items-center gap-2">
-                      {selected.tipo_negocio && (
-                        <span className="text-[10px] text-muted">{selected.tipo_negocio}</span>
+                      {selected.lead?.tipo_negocio && (
+                        <span className="text-[10px] text-muted">{selected.lead.tipo_negocio}</span>
                       )}
                       <span className="flex items-center gap-1">
-                        <span className={`w-1.5 h-1.5 rounded-full ${!selected.humano_activo ? 'bg-primary animate-pulse-glow' : 'bg-accent-orange'}`} />
-                        <span className={`text-[10px] ${!selected.humano_activo ? 'text-primary' : 'text-accent-orange'}`}>
-                          {!selected.humano_activo ? t('conversations.aiManaging') : t('conversations.humanActive')}
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            !selected.lead?.humano_activo
+                              ? 'bg-primary animate-pulse-glow'
+                              : 'bg-accent-orange'
+                          }`}
+                        />
+                        <span
+                          className={`text-[10px] ${
+                            !selected.lead?.humano_activo ? 'text-primary' : 'text-accent-orange'
+                          }`}
+                        >
+                          {!selected.lead?.humano_activo
+                            ? t('conversations.aiManaging')
+                            : t('conversations.humanActive')}
                         </span>
                       </span>
                     </div>
                   </div>
                 </div>
-                {selected.historial_resumen && (
+                {selected.lead?.historial_resumen && (
                   <div className="hidden xl:block max-w-xs">
                     <p className="text-[10px] text-muted leading-relaxed line-clamp-2">
-                      {selected.historial_resumen}
+                      {selected.lead.historial_resumen}
                     </p>
                   </div>
                 )}
@@ -170,12 +194,15 @@ export default function ConversationsPage() {
 
               {/* Messages */}
               <div className="flex-1 p-4 space-y-4 overflow-y-auto">
-                {selected.historial_mensajes.map((msg, i) => {
-                  const isProspect = msg.rol === 'prospecto'
-                  const isBot = msg.rol === 'bot'
+                {selectedMessages.length === 0 && (
+                  <p className="text-sm text-muted text-center py-8">{t('conversations.noMessages')}</p>
+                )}
+                {selectedMessages.map((msg) => {
+                  const isProspect = PROSPECT_ROLES.has(msg.rol)
+                  const isBot = BOT_ROLES.has(msg.rol)
 
                   return (
-                    <div key={i} className={`flex ${isProspect ? 'justify-start' : 'justify-end'}`}>
+                    <div key={msg.id} className={`flex ${isProspect ? 'justify-start' : 'justify-end'}`}>
                       <div
                         className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${
                           isProspect
@@ -192,14 +219,18 @@ export default function ConversationsPage() {
                             ) : (
                               <User className="w-3 h-3 text-accent-orange" />
                             )}
-                            <span className={`text-[10px] font-medium ${isBot ? 'text-primary' : 'text-accent-orange'}`}>
+                            <span
+                              className={`text-[10px] font-medium ${
+                                isBot ? 'text-primary' : 'text-accent-orange'
+                              }`}
+                            >
                               {isBot ? t('general.ai') : t('general.human')}
                             </span>
                           </div>
                         )}
-                        <p className="text-sm whitespace-pre-wrap">{msg.msg}</p>
+                        <p className="text-sm whitespace-pre-wrap">{msg.mensaje}</p>
                         <span className="text-[10px] text-muted mt-1 block">
-                          {formatTime(msg.ts)}
+                          {formatTime(msg.created_at)}
                         </span>
                       </div>
                     </div>
@@ -216,35 +247,44 @@ export default function ConversationsPage() {
                   </div>
                   <button
                     onClick={async () => {
-                      if (!selected) return
+                      if (!selected?.lead) {
+                        toast('Sin lead asociado — toggle no disponible', 'error')
+                        return
+                      }
                       setToggling(true)
                       const { error } = await getSupabase()
                         .from('leads')
-                        .update({ humano_activo: !selected.humano_activo })
-                        .eq('id', selected.id)
+                        .update({ humano_activo: !selected.lead.humano_activo })
+                        .eq('id', selected.lead.id)
                       setToggling(false)
                       if (error) {
                         toast(error.message, 'error')
                       } else {
-                        toast(selected.humano_activo ? t('conversations.switchedToAI') : t('conversations.switchedToHuman'))
+                        toast(
+                          selected.lead.humano_activo
+                            ? t('conversations.switchedToAI')
+                            : t('conversations.switchedToHuman')
+                        )
                         refetch()
                       }
                     }}
-                    disabled={toggling}
+                    disabled={toggling || !selected.lead}
                     className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-medium transition-all duration-200 active:scale-[0.97] disabled:opacity-50 ${
-                      selected.humano_activo
+                      selected.lead?.humano_activo
                         ? 'bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20'
                         : 'bg-accent-orange/10 text-accent-orange border border-accent-orange/20 hover:bg-accent-orange/20'
                     }`}
                   >
                     {toggling ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : selected.humano_activo ? (
+                    ) : selected.lead?.humano_activo ? (
                       <ShieldCheck className="w-3.5 h-3.5" />
                     ) : (
                       <ShieldAlert className="w-3.5 h-3.5" />
                     )}
-                    {selected.humano_activo ? t('conversations.switchToAI') : t('conversations.takeControl')}
+                    {selected.lead?.humano_activo
+                      ? t('conversations.switchToAI')
+                      : t('conversations.takeControl')}
                   </button>
                 </div>
               </div>
