@@ -6,10 +6,9 @@ export const runtime = 'nodejs'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
-const ADMIN_EMAILS = new Set([
-  ...(process.env.SUPERADMIN_EMAIL ? [process.env.SUPERADMIN_EMAIL.toLowerCase()] : []),
-  'info@impulsapr.com',
-])
+const ADMIN_EMAILS = new Set(
+  (process.env.SUPERADMIN_EMAIL || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean)
+)
 
 // Webhook url fija — n8n routea por número de teléfono, no por path
 const N8N_WEBHOOK_URL = 'https://n8n.impulsapr.com/webhook/bot-whatsapp'

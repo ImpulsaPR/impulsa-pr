@@ -6,10 +6,9 @@ import {
   calendarSearch,
   calendarGet,
 } from '@/lib/google-calendar'
+import { verifyProxyAuth } from '@/lib/proxy-auth'
 
 export const runtime = 'nodejs'
-
-const PROXY_TOKEN = (process.env.CALENDAR_PROXY_TOKEN || '').trim()
 
 interface ExecBody {
   cliente_id: string
@@ -27,12 +26,6 @@ interface ExecBody {
 }
 
 export async function POST(req: Request) {
-  // Auth via shared secret token (n8n includes header)
-  const token = req.headers.get('x-proxy-token') || ''
-  if (!PROXY_TOKEN || token !== PROXY_TOKEN) {
-    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  }
-
   let body: ExecBody
   try {
     body = (await req.json()) as ExecBody
@@ -42,6 +35,16 @@ export async function POST(req: Request) {
 
   if (!body.cliente_id || !body.operation) {
     return NextResponse.json({ error: 'cliente_id y operation requeridos' }, { status: 400 })
+  }
+
+  // Auth: HMAC del cliente_id + timestamp con shared secret. Legacy
+  // fallback x-proxy-token para n8n no migrado todavía.
+  const auth = verifyProxyAuth(req, body.cliente_id)
+  if (!auth.ok) {
+    return NextResponse.json(
+      { error: 'unauthorized', reason: auth.reason },
+      { status: 401 }
+    )
   }
 
   try {

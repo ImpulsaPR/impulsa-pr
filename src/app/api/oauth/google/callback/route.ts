@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
+import { createHmac, timingSafeEqual } from 'crypto'
 import { createClient } from '@supabase/supabase-js'
 import { createSupabaseServer } from '@/lib/supabase-server'
+import { encryptToken } from '@/lib/token-crypto'
 
 export const runtime = 'nodejs'
 
@@ -9,6 +11,11 @@ const CLIENT_SECRET = (process.env.GOOGLE_CLIENT_SECRET || '').trim()
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || 'https://cliente.impulsapr.com').trim()
 const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim()
 const SUPABASE_SERVICE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim()
+const STATE_SECRET = (
+  process.env.OAUTH_STATE_SECRET ||
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  ''
+).trim()
 
 interface TokenResponse {
   access_token: string
@@ -28,7 +35,16 @@ interface UserInfo {
 function settingsRedirect(query: Record<string, string>) {
   const url = new URL(`${APP_URL}/settings`)
   Object.entries(query).forEach(([k, v]) => url.searchParams.set(k, v))
-  return NextResponse.redirect(url.toString())
+  const res = NextResponse.redirect(url.toString())
+  // Clear the nonce cookie regardless of outcome
+  res.cookies.set('oauth_nonce', '', {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'lax',
+    path: '/api/oauth/google/callback',
+    maxAge: 0,
+  })
+  return res
 }
 
 export async function GET(req: Request) {
@@ -44,11 +60,42 @@ export async function GET(req: Request) {
     return settingsRedirect({ calendar_error: 'sin_codigo' })
   }
 
-  // Decode state for sanity check (anti-CSRF light)
-  let stateData: { user_id?: string; ts?: number } = {}
+  // Verify CSRF state: HMAC-signed payload + nonce from HttpOnly cookie + expiry.
+  if (!state) return settingsRedirect({ calendar_error: 'no_state' })
+  let stateUserId = ''
+  let stateNonce = ''
+  let stateExpires = 0
   try {
-    stateData = JSON.parse(Buffer.from(state || '', 'base64url').toString('utf8'))
-  } catch {}
+    const decoded = Buffer.from(state, 'base64url').toString('utf8')
+    const parts = decoded.split('|')
+    if (parts.length !== 4) throw new Error('bad parts')
+    const [uid, nonce, expStr, sig] = parts
+    const expectedSig = createHmac('sha256', STATE_SECRET)
+      .update(`${uid}|${nonce}|${expStr}`)
+      .digest('base64url')
+    const a = Buffer.from(expectedSig, 'utf8')
+    const b = Buffer.from(sig, 'utf8')
+    if (a.length !== b.length || !timingSafeEqual(a, b)) throw new Error('bad sig')
+    stateUserId = uid
+    stateNonce = nonce
+    stateExpires = Number(expStr)
+  } catch {
+    return settingsRedirect({ calendar_error: 'state_invalid' })
+  }
+  if (Date.now() > stateExpires) {
+    return settingsRedirect({ calendar_error: 'state_expirado' })
+  }
+
+  // Verify nonce against HttpOnly cookie (prevents replay even if state leaks)
+  const cookieNonce = req.headers
+    .get('cookie')
+    ?.split(';')
+    .map((c) => c.trim())
+    .find((c) => c.startsWith('oauth_nonce='))
+    ?.slice('oauth_nonce='.length)
+  if (!cookieNonce || cookieNonce !== stateNonce) {
+    return settingsRedirect({ calendar_error: 'nonce_mismatch' })
+  }
 
   // Auth current session
   const supabase = await createSupabaseServer()
@@ -56,7 +103,7 @@ export async function GET(req: Request) {
   if (!user) {
     return settingsRedirect({ calendar_error: 'sesion_expirada' })
   }
-  if (stateData.user_id && stateData.user_id !== user.id) {
+  if (stateUserId !== user.id) {
     return settingsRedirect({ calendar_error: 'state_mismatch' })
   }
 
@@ -115,8 +162,8 @@ export async function GET(req: Request) {
       {
         cliente_id: cliente.id,
         provider: 'google_calendar',
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token || null,
+        access_token: encryptToken(tokens.access_token),
+        refresh_token: tokens.refresh_token ? encryptToken(tokens.refresh_token) : null,
         expires_at: expiresAt,
         scope: tokens.scope,
         google_email: googleEmail,

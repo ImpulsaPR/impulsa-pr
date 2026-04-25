@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { decryptToken, encryptToken } from './token-crypto'
 
 const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim()
 const SUPABASE_SERVICE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim()
@@ -38,14 +39,21 @@ export async function getValidGoogleToken(clienteId: string): Promise<CalendarCr
     throw new Error('Cliente no tiene Google Calendar conectado')
   }
 
-  const expiresAt = new Date(cred.expires_at).getTime()
+  // Decrypt tokens (handles legacy plaintext + new v1: format transparently)
+  const decrypted: CalendarCredentials = {
+    ...cred,
+    access_token: decryptToken(cred.access_token) as string,
+    refresh_token: decryptToken(cred.refresh_token),
+  } as CalendarCredentials
+
+  const expiresAt = new Date(decrypted.expires_at).getTime()
   const expiringSoon = Date.now() > expiresAt - 60_000 // 1 min buffer
 
   if (!expiringSoon) {
-    return cred as CalendarCredentials
+    return decrypted
   }
 
-  if (!cred.refresh_token) {
+  if (!decrypted.refresh_token) {
     throw new Error('Token expirado y sin refresh_token. Reconecta Calendar.')
   }
 
@@ -56,7 +64,7 @@ export async function getValidGoogleToken(clienteId: string): Promise<CalendarCr
     body: new URLSearchParams({
       client_id: GOOGLE_CLIENT_ID,
       client_secret: GOOGLE_CLIENT_SECRET,
-      refresh_token: cred.refresh_token,
+      refresh_token: decrypted.refresh_token,
       grant_type: 'refresh_token',
     }),
   })
@@ -78,19 +86,19 @@ export async function getValidGoogleToken(clienteId: string): Promise<CalendarCr
   await admin()
     .from('bot_credentials')
     .update({
-      access_token: tokens.access_token,
+      access_token: encryptToken(tokens.access_token),
       expires_at: newExpiresAt,
       // Google may issue a new refresh_token; keep old if not
-      ...(tokens.refresh_token ? { refresh_token: tokens.refresh_token } : {}),
+      ...(tokens.refresh_token ? { refresh_token: encryptToken(tokens.refresh_token) } : {}),
       updated_at: new Date().toISOString(),
     })
     .eq('cliente_id', clienteId)
     .eq('provider', 'google_calendar')
 
   return {
-    ...cred,
+    ...decrypted,
     access_token: tokens.access_token,
-    refresh_token: tokens.refresh_token || cred.refresh_token,
+    refresh_token: tokens.refresh_token || decrypted.refresh_token,
     expires_at: newExpiresAt,
   } as CalendarCredentials
 }
