@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createSupabaseServer } from '@/lib/supabase-server'
+import { rateLimit } from '@/lib/rate-limit'
 
 const YCLOUD_BASE = 'https://api.ycloud.com/v2'
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -63,6 +64,22 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'cliente no encontrado para usuario auth' }, { status: 403 })
   }
   const clienteId = cliente.id as string
+
+  // Rate limit: 60 mensajes/min y 500/hora por cliente.
+  const rl1 = await rateLimit('wa_send', clienteId, 60, 60)
+  if (!rl1.ok) {
+    return NextResponse.json(
+      { error: 'rate_limit_exceeded', retry_after_seconds: rl1.retry_after_seconds, scope: 'minute' },
+      { status: 429, headers: { 'Retry-After': String(rl1.retry_after_seconds || 60) } }
+    )
+  }
+  const rl2 = await rateLimit('wa_send_hour', clienteId, 500, 3600)
+  if (!rl2.ok) {
+    return NextResponse.json(
+      { error: 'rate_limit_exceeded', retry_after_seconds: rl2.retry_after_seconds, scope: 'hour' },
+      { status: 429, headers: { 'Retry-After': String(rl2.retry_after_seconds || 3600) } }
+    )
+  }
 
   // 5. Get bot config (numero_whatsapp_bot to send from)
   const { data: bot } = await admin
