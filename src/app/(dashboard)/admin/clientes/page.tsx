@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import {
   ShieldCheck,
   Users,
@@ -349,9 +350,14 @@ function OnboardModal({
     }
   }
 
-  return (
+  // Render via portal to document.body para escapar del PageTransition wrapper
+  // que tiene 'translate-y-0' (Tailwind transform), lo cual crea un nuevo
+  // contexto de apilamiento y rompe position:fixed.
+  if (typeof document === 'undefined') return null
+
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
+      className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
       onClick={(e) => {
         if (e.target === e.currentTarget && !submitting) onClose()
       }}
@@ -446,7 +452,8 @@ function OnboardModal({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
