@@ -181,103 +181,52 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'fallo invitacion' }, { status: 500 })
   }
 
-  // 7. Insert clientes
+  // 7-8. Insert cliente + bot ATÓMICO via RPC. Si falla cualquier paso,
+  // Postgres hace rollback total. Solo queda rollback del auth user
+  // que ya creamos arriba.
+  const webhook_path = `${slugify(empresa)}-${randomSuffix(6)}`
   let clienteId: string | null = null
-  try {
-    const { data: clienteRow, error: clienteErr } = await admin
-      .from('clientes')
-      .insert({
-        auth_user_id: authUserId,
-        email,
-        nombre,
-        empresa,
-        plan: 'standard',
-      })
-      .select('id')
-      .single()
+  let botId: string | null = null
 
-    if (clienteErr || !clienteRow) {
-      logErr('insert_cliente', clienteErr)
-      // Rollback: delete auth user
+  try {
+    const { data: rpcResult, error: rpcErr } = await (admin.rpc as unknown as (
+      fn: string,
+      args: Record<string, unknown>
+    ) => Promise<{ data: Array<{ cliente_id: string; bot_id: string }> | null; error: { message: string } | null }>)(
+      'admin_onboard_cliente',
+      {
+        p_auth_user_id: authUserId,
+        p_email: email,
+        p_nombre: nombre,
+        p_empresa: empresa,
+        p_nicho: nicho,
+        p_numero_whatsapp_bot: numero_whatsapp_bot,
+        p_numero_dueno: numero_dueno,
+        p_email_dueno: email_dueno || null,
+        p_nombre_agente: nombre_agente,
+        p_webhook_path: webhook_path,
+      }
+    )
+
+    if (rpcErr || !rpcResult || rpcResult.length === 0) {
+      logErr('rpc_onboard', rpcErr)
       if (authUserId) {
         await admin.auth.admin.deleteUser(authUserId).catch((e) => logErr('rollback_auth', e))
       }
       return NextResponse.json(
-        { error: 'fallo al crear cliente', detail: clienteErr?.message },
+        { error: 'fallo al crear cliente/bot', detail: rpcErr?.message?.slice(0, 200) },
         { status: 500 }
       )
     }
-    clienteId = clienteRow.id as string
+
+    clienteId = rpcResult[0].cliente_id
+    botId = rpcResult[0].bot_id
   } catch (e) {
-    logErr('insert_cliente_throw', e)
+    logErr('rpc_onboard_throw', e)
     if (authUserId) {
       await admin.auth.admin.deleteUser(authUserId).catch((er) => logErr('rollback_auth', er))
     }
-    return NextResponse.json({ error: 'fallo al crear cliente' }, { status: 500 })
-  }
-
-  // 8. Insert bot
-  const webhook_path = `${slugify(empresa)}-${randomSuffix(6)}`
-  let botId: string | null = null
-
-  // bots tiene columnas extra runtime (numero_whatsapp_bot, email_dueno, nicho, servicios_json)
-  // que no estan en database.types.ts. Usamos un payload sin tipar.
-  const botPayload: Record<string, unknown> = {
-    cliente_id: clienteId,
-    nombre: nombre_agente,
-    nombre_agente,
-    empresa_nombre: empresa,
-    numero_whatsapp_bot,
-    telefono: numero_whatsapp_bot, // legacy column del schema antiguo
-    instancia_evolution: webhook_path, // legacy NOT NULL
-    numero_dueno,
-    email_dueno,
-    nicho,
-    webhook_path,
-    horario_inicio: '09:00',
-    horario_fin: '18:00',
-    zona_horaria: 'America/Puerto_Rico',
-    mensaje_bienvenida:
-      `Hola, soy ${nombre_agente} de ${empresa}. ¿En qué puedo ayudarte hoy?`,
-    mensaje_fuera_horario:
-      `Gracias por escribirnos a ${empresa}. Estamos fuera de horario (9am-6pm AST). Te respondemos lo antes posible.`,
-    servicios_json: [],
-    activo: true,
-  }
-
-  try {
-    const { data: botRow, error: botErr } = await admin
-      .from('bots')
-      .insert(botPayload as never)
-      .select('id')
-      .single()
-
-    if (botErr || !botRow) {
-      logErr('insert_bot', botErr)
-      // Rollback: delete cliente + auth
-      await admin.from('clientes').delete().eq('id', clienteId).then(
-        () => undefined,
-        (er) => logErr('rollback_cliente', er)
-      )
-      if (authUserId) {
-        await admin.auth.admin.deleteUser(authUserId).catch((er) => logErr('rollback_auth', er))
-      }
-      return NextResponse.json(
-        { error: 'fallo al crear bot', detail: botErr?.message },
-        { status: 500 }
-      )
-    }
-    botId = (botRow as { id: string }).id
-  } catch (e) {
-    logErr('insert_bot_throw', e)
-    await admin.from('clientes').delete().eq('id', clienteId).then(
-      () => undefined,
-      (er) => logErr('rollback_cliente', er)
-    )
-    if (authUserId) {
-      await admin.auth.admin.deleteUser(authUserId).catch((er) => logErr('rollback_auth', er))
-    }
-    return NextResponse.json({ error: 'fallo al crear bot' }, { status: 500 })
+    return NextResponse.json({ error: 'fallo al crear cliente/bot' }, { status: 500 })
   }
 
   return NextResponse.json({
