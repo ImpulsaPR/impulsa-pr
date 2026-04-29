@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import {
   ShieldCheck,
   Loader2,
@@ -10,6 +11,8 @@ import {
   Check,
   CreditCard,
   AlertTriangle,
+  UserPlus,
+  X,
 } from 'lucide-react'
 import { useAdmin } from '@/hooks/use-admin'
 import { useToast } from '@/components/ui/toast'
@@ -87,6 +90,7 @@ export default function AdminVentasPage() {
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<string>('pending_onboarding')
   const [marking, setMarking] = useState<string | null>(null)
+  const [onboardingPurchase, setOnboardingPurchase] = useState<Purchase | null>(null)
 
   const refresh = useCallback(async () => {
     setLoading(true)
@@ -233,16 +237,25 @@ export default function AdminVentasPage() {
               {p.status === 'pending_onboarding' ? (
                 <div className="flex gap-2 flex-shrink-0">
                   <button
-                    onClick={() => markAs(p.id, 'onboarded')}
+                    onClick={() => setOnboardingPurchase(p)}
                     disabled={marking === p.id}
                     className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-sm font-medium hover:bg-emerald-500/20 disabled:opacity-50"
+                  >
+                    <UserPlus className="size-4" />
+                    Onboardear ahora
+                  </button>
+                  <button
+                    onClick={() => markAs(p.id, 'onboarded')}
+                    disabled={marking === p.id}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-foreground/5 text-muted text-sm font-medium hover:text-foreground disabled:opacity-50"
+                    title="Marcar como onboardeado sin crear cuenta (si ya lo creaste manualmente)"
                   >
                     {marking === p.id ? (
                       <Loader2 className="size-4 animate-spin" />
                     ) : (
                       <CheckCircle2 className="size-4" />
                     )}
-                    Marcar onboardeado
+                    Marcar manual
                   </button>
                   <button
                     onClick={() => markAs(p.id, 'skipped')}
@@ -272,6 +285,325 @@ export default function AdminVentasPage() {
           ))}
         </div>
       )}
+
+      {onboardingPurchase && (
+        <OnboardFromPurchaseModal
+          purchase={onboardingPurchase}
+          onClose={() => setOnboardingPurchase(null)}
+          onSuccess={() => {
+            setOnboardingPurchase(null)
+            toast('Cliente onboardeado y compra marcada', 'success')
+            refresh()
+          }}
+        />
+      )}
     </div>
+  )
+}
+
+// ============================================================
+// Modal: onboard pre-llenado desde stripe_purchase
+// ============================================================
+
+interface NichoOption {
+  nicho_id: string
+  nombre_display: string
+}
+
+interface PrefillForm {
+  empresa: string
+  nicho: string
+  numero_whatsapp_bot: string
+  numero_dueno: string
+  email_dueno: string
+  nombre_agente: string
+}
+
+const PHONE_RE = /^\+\d{10,15}$/
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+const inputCls =
+  'w-full px-3 py-2 rounded-xl border border-border bg-background text-foreground text-sm outline-none focus:border-foreground/40 transition-colors'
+
+function OnboardFromPurchaseModal({
+  purchase,
+  onClose,
+  onSuccess,
+}: {
+  purchase: Purchase
+  onClose: () => void
+  onSuccess: () => void
+}) {
+  const [nichos, setNichos] = useState<NichoOption[]>([])
+  const [submitting, setSubmitting] = useState(false)
+  const [errMsg, setErrMsg] = useState<string | null>(null)
+  const [form, setForm] = useState<PrefillForm>({
+    empresa: '',
+    nicho: '',
+    numero_whatsapp_bot: '+1',
+    numero_dueno: '+1',
+    email_dueno: '',
+    nombre_agente: 'Asistente',
+  })
+
+  useEffect(() => {
+    fetch('/api/admin/list-nichos', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((j) => setNichos(j.nichos || []))
+      .catch(() => setNichos([]))
+  }, [])
+
+  const update = <K extends keyof PrefillForm>(k: K, v: PrefillForm[K]) => {
+    setForm((s) => ({ ...s, [k]: v }))
+    setErrMsg(null)
+  }
+
+  const validate = (): string | null => {
+    if (!form.empresa.trim()) return 'Empresa requerida'
+    if (!form.nicho.trim()) return 'Selecciona un nicho'
+    if (!PHONE_RE.test(form.numero_whatsapp_bot.trim())) {
+      return 'Número WhatsApp del bot inválido (formato +1XXXXXXXXXX)'
+    }
+    if (!PHONE_RE.test(form.numero_dueno.trim())) {
+      return 'Número del dueño inválido (formato +1XXXXXXXXXX)'
+    }
+    if (form.email_dueno.trim() && !EMAIL_RE.test(form.email_dueno.trim())) {
+      return 'Email del dueño inválido'
+    }
+    return null
+  }
+
+  const submit = async () => {
+    const err = validate()
+    if (err) {
+      setErrMsg(err)
+      return
+    }
+    setSubmitting(true)
+    setErrMsg(null)
+
+    try {
+      // 1) Crear cliente + bot
+      const onboardRes = await fetch('/api/admin/onboard-cliente', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: purchase.email,
+          nombre: purchase.customer_name || purchase.email.split('@')[0],
+          empresa: form.empresa.trim(),
+          nicho: form.nicho,
+          numero_whatsapp_bot: form.numero_whatsapp_bot.trim(),
+          numero_dueno: form.numero_dueno.trim(),
+          email_dueno: form.email_dueno.trim() || undefined,
+          nombre_agente: form.nombre_agente.trim() || 'Asistente',
+        }),
+      })
+      const onboardJson = await onboardRes.json()
+      if (!onboardRes.ok) {
+        setErrMsg(onboardJson.error || 'Error al crear cliente')
+        return
+      }
+
+      // 2) Marcar purchase como onboardeado y ligar cliente_id
+      const markRes = await fetch('/api/admin/mark-purchase', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: purchase.id,
+          status: 'onboarded',
+          cliente_id: onboardJson.cliente_id,
+        }),
+      })
+      if (!markRes.ok) {
+        const j = await markRes.json().catch(() => ({}))
+        setErrMsg(`Cliente creado pero falló marcar compra: ${j.error || 'error'}`)
+        return
+      }
+
+      onSuccess()
+    } catch (e) {
+      setErrMsg(e instanceof Error ? e.message : 'error')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  if (typeof document === 'undefined') return null
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !submitting) onClose()
+      }}
+    >
+      <div
+        className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-xl flex flex-col"
+        style={{ maxHeight: 'min(90vh, 720px)' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+          <div>
+            <h2 className="font-semibold text-foreground">Onboardear cliente</h2>
+            <p className="text-xs text-muted mt-0.5">
+              Pre-llenado desde el checkout Stripe — completa los datos faltantes
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            disabled={submitting}
+            className="p-1.5 rounded-lg hover:bg-foreground/5 text-muted hover:text-foreground transition-colors disabled:opacity-50"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-5 space-y-3">
+          {/* Datos pre-llenados (readonly) */}
+          <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 space-y-1.5 text-sm">
+            <div className="flex items-center gap-2 text-xs text-primary font-medium mb-1">
+              <CheckCircle2 className="size-3.5" />
+              Datos del checkout Stripe
+            </div>
+            <div className="flex justify-between gap-3">
+              <span className="text-muted text-xs">Email:</span>
+              <span className="text-foreground text-right break-all">{purchase.email}</span>
+            </div>
+            <div className="flex justify-between gap-3">
+              <span className="text-muted text-xs">Nombre:</span>
+              <span className="text-foreground text-right">
+                {purchase.customer_name || '—'}
+              </span>
+            </div>
+            <div className="flex justify-between gap-3">
+              <span className="text-muted text-xs">Plan:</span>
+              <span className="text-foreground text-right">
+                {purchase.plan_slug || '—'}
+                {purchase.billing_interval && ` (${purchase.billing_interval})`}
+              </span>
+            </div>
+            <div className="flex justify-between gap-3">
+              <span className="text-muted text-xs">Monto:</span>
+              <span className="text-foreground text-right">
+                {new Intl.NumberFormat('en-US', {
+                  style: 'currency',
+                  currency: (purchase.currency || 'usd').toUpperCase(),
+                  minimumFractionDigits: 0,
+                }).format(purchase.amount_total_cents / 100)}
+              </span>
+            </div>
+          </div>
+
+          {/* Campos a completar */}
+          <label className="block">
+            <span className="text-xs font-medium text-foreground block mb-1.5">
+              Empresa *
+            </span>
+            <input
+              type="text"
+              className={inputCls}
+              value={form.empresa}
+              onChange={(e) => update('empresa', e.target.value)}
+              placeholder="Mi Barbería LLC"
+            />
+          </label>
+          <label className="block">
+            <span className="text-xs font-medium text-foreground block mb-1.5">Nicho *</span>
+            <select
+              className={inputCls}
+              value={form.nicho}
+              onChange={(e) => update('nicho', e.target.value)}
+            >
+              <option value="">Selecciona...</option>
+              {nichos.map((n) => (
+                <option key={n.nicho_id} value={n.nicho_id}>
+                  {n.nombre_display}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className="text-xs font-medium text-foreground block mb-1.5">
+              Número WhatsApp del bot *
+            </span>
+            <input
+              type="tel"
+              className={inputCls}
+              value={form.numero_whatsapp_bot}
+              onChange={(e) => update('numero_whatsapp_bot', e.target.value)}
+              placeholder="+17875551234"
+            />
+            <span className="text-[11px] text-muted mt-1 block">
+              El número WhatsApp Business del cliente, donde correrá Quasar
+            </span>
+          </label>
+          <label className="block">
+            <span className="text-xs font-medium text-foreground block mb-1.5">
+              Número del dueño *
+            </span>
+            <input
+              type="tel"
+              className={inputCls}
+              value={form.numero_dueno}
+              onChange={(e) => update('numero_dueno', e.target.value)}
+              placeholder="+17875551234"
+            />
+            <span className="text-[11px] text-muted mt-1 block">
+              Teléfono personal del dueño, para escalamientos del bot
+            </span>
+          </label>
+          <label className="block">
+            <span className="text-xs font-medium text-foreground block mb-1.5">
+              Email del dueño (opcional)
+            </span>
+            <input
+              type="email"
+              className={inputCls}
+              value={form.email_dueno}
+              onChange={(e) => update('email_dueno', e.target.value)}
+              placeholder="dueño@empresa.com"
+            />
+          </label>
+          <label className="block">
+            <span className="text-xs font-medium text-foreground block mb-1.5">
+              Nombre del agente (bot)
+            </span>
+            <input
+              type="text"
+              className={inputCls}
+              value={form.nombre_agente}
+              onChange={(e) => update('nombre_agente', e.target.value)}
+              placeholder="Quasar"
+            />
+          </label>
+
+          {errMsg && (
+            <div className="mt-3 p-3 rounded-xl border border-accent-red/30 bg-accent-red/10 text-accent-red text-xs flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <span>{errMsg}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between px-5 py-4 border-t border-border gap-2">
+          <button
+            onClick={onClose}
+            disabled={submitting}
+            className="px-3 py-2 rounded-xl text-sm text-muted hover:text-foreground hover:bg-foreground/5 disabled:opacity-50"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={submit}
+            disabled={submitting}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-foreground text-background hover:opacity-90 text-sm font-medium disabled:opacity-50"
+          >
+            {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+            Crear cuenta y onboardear
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
   )
 }

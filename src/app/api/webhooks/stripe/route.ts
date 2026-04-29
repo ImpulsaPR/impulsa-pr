@@ -10,6 +10,10 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || ''
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || ''
+const YCLOUD_API_KEY = process.env.YCLOUD_API_KEY || ''
+const NOTIFY_OWNER_PHONE = process.env.NOTIFY_OWNER_PHONE || ''
+const YCLOUD_FROM_NUMBER = process.env.YCLOUD_FROM_NUMBER || '+19399052410'
+const ADMIN_VENTAS_URL = 'https://cliente.impulsapr.com/admin/ventas'
 const SIGNATURE_TOLERANCE_S = 300 // 5 min
 
 // Verifica la firma del header Stripe-Signature usando crypto puro.
@@ -45,6 +49,47 @@ function verifyStripeSignature(payload: string, header: string, secret: string):
       return false
     }
   })
+}
+
+// Notifica al dueño por WhatsApp via YCloud (fire-and-forget).
+// Si falta YCLOUD_API_KEY o NOTIFY_OWNER_PHONE, simplemente no manda nada y loguea.
+function notifyOwner(opts: {
+  email: string
+  customerName: string | null
+  planLabel: string
+  intervalSuffix: string
+  amountUsd: string
+  currency: string
+}): void {
+  if (!YCLOUD_API_KEY || !NOTIFY_OWNER_PHONE) {
+    console.warn('[stripe/webhook] notif skip — YCLOUD_API_KEY o NOTIFY_OWNER_PHONE no configurado')
+    return
+  }
+  const cliente = opts.customerName?.trim() || opts.email
+  const body =
+    `Nuevo pago Impulsa PR\n\n` +
+    `Cliente: ${cliente}\n` +
+    `Email: ${opts.email}\n` +
+    `Plan: ${opts.planLabel}${opts.intervalSuffix}\n` +
+    `Monto: $${opts.amountUsd} ${opts.currency.toUpperCase()}\n\n` +
+    `Onboardealo aqui:\n${ADMIN_VENTAS_URL}`
+
+  fetch('https://api.ycloud.com/v2/whatsapp/messages', {
+    method: 'POST',
+    headers: { 'X-API-Key': YCLOUD_API_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: YCLOUD_FROM_NUMBER,
+      to: NOTIFY_OWNER_PHONE,
+      type: 'text',
+      text: { body },
+    }),
+  })
+    .then(async (r) => {
+      if (!r.ok) {
+        console.error('[stripe/webhook] notif YCloud HTTP', r.status, await r.text().catch(() => ''))
+      }
+    })
+    .catch((e) => console.error('[stripe/webhook] notif YCloud throw', e))
 }
 
 // Llama al API Stripe para expandir line_items (no vienen en el evento).
@@ -161,5 +206,17 @@ export async function POST(req: Request) {
   }
 
   console.log('[stripe/webhook] purchase registrado', { email, planSlug, session: session.id })
+
+  // Notificar al dueño (best-effort, fire-and-forget — no bloquea response a Stripe)
+  notifyOwner({
+    email,
+    customerName: session.customer_details?.name || null,
+    planLabel: plan?.name || 'Plan',
+    intervalSuffix:
+      billingInterval === 'month' ? '/mes' : billingInterval === 'year' ? '/año' : ' (one-time)',
+    amountUsd: ((session.amount_total ?? 0) / 100).toFixed(2),
+    currency: session.currency || 'usd',
+  })
+
   return NextResponse.json({ received: true })
 }
