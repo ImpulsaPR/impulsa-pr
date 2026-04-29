@@ -70,6 +70,7 @@ export default function AdminClientesPage() {
   const [loading, setLoading] = useState(true)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
+  const [pendingPurchases, setPendingPurchases] = useState<number>(0)
 
   const refresh = useCallback(async () => {
     setLoading(true)
@@ -94,6 +95,10 @@ export default function AdminClientesPage() {
   useEffect(() => {
     if (!isSuperAdmin) return
     refresh()
+    fetch('/api/admin/list-stripe-purchases?status=pending_onboarding', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : { purchases: [] }))
+      .then((j) => setPendingPurchases((j.purchases || []).length))
+      .catch(() => setPendingPurchases(0))
   }, [isSuperAdmin, refresh])
 
   if (adminLoading) {
@@ -138,6 +143,19 @@ export default function AdminClientesPage() {
           {t('admin.clientes.new')}
         </button>
       </div>
+
+      {pendingPurchases > 0 && (
+        <a
+          href="/admin/ventas"
+          className="block mb-4 p-3 rounded-xl border border-primary/30 bg-primary/5 text-sm hover:bg-primary/10 transition"
+        >
+          <span className="font-medium text-primary">
+            {pendingPurchases} compra{pendingPurchases !== 1 ? 's' : ''} de Stripe pendiente
+            {pendingPurchases !== 1 ? 's' : ''} de onboarding
+          </span>
+          <span className="text-muted ml-2">→ ver en /admin/ventas</span>
+        </a>
+      )}
 
       {errorMsg && (
         <div className="mb-4 p-3 rounded-xl border border-accent-red/30 bg-accent-red/10 text-accent-red text-sm flex items-start gap-2">
