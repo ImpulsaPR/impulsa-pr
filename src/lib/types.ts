@@ -15,6 +15,7 @@ export interface Lead {
   contact_name: string | null
   es_contacto_guardado: boolean
   tipo_negocio: string | null
+  nombre_negocio: string | null
   necesidad: string | null
   estado: LeadEstado
   nivel_interes: NivelInteres

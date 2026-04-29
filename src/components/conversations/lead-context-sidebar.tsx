@@ -161,7 +161,6 @@ export function LeadContextSidebar({ lead, phone, open, onClose }: LeadContextSi
                   {/* Negocio */}
                   <Section icon={<Building2 className="w-4 h-4" />} title="Negocio">
                     <Field label="Tipo" value={lead.tipo_negocio} />
-                    {/* @ts-expect-error nombre_negocio not in current types but might be in DB */}
                     <Field label="Empresa" value={lead.nombre_negocio} />
                     <Field label="Necesidad" value={lead.necesidad} multiline />
                     <Field label="Empleados" value={lead.num_empleados} />

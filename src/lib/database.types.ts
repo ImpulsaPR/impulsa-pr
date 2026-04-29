@@ -14,6 +14,103 @@ export type Database = {
   }
   public: {
     Tables: {
+      bot_credentials: {
+        Row: {
+          access_token: string
+          calendar_id: string
+          calendar_name: string | null
+          cliente_id: string
+          created_at: string
+          expires_at: string
+          google_email: string | null
+          id: string
+          provider: string
+          refresh_token: string | null
+          scope: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_token: string
+          calendar_id?: string
+          calendar_name?: string | null
+          cliente_id: string
+          created_at?: string
+          expires_at: string
+          google_email?: string | null
+          id?: string
+          provider: string
+          refresh_token?: string | null
+          scope?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          calendar_id?: string
+          calendar_name?: string | null
+          cliente_id?: string
+          created_at?: string
+          expires_at?: string
+          google_email?: string | null
+          id?: string
+          provider?: string
+          refresh_token?: string | null
+          scope?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bot_credentials_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bot_dedup: {
+        Row: {
+          bot_id: string | null
+          created_at: string | null
+          wamid: string
+        }
+        Insert: {
+          bot_id?: string | null
+          created_at?: string | null
+          wamid: string
+        }
+        Update: {
+          bot_id?: string | null
+          created_at?: string | null
+          wamid?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bot_dedup_bot_id_fkey"
+            columns: ["bot_id"]
+            isOneToOne: false
+            referencedRelation: "bots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bot_sent_messages: {
+        Row: {
+          created_at: string | null
+          message_id: string
+          telefono: string
+        }
+        Insert: {
+          created_at?: string | null
+          message_id: string
+          telefono: string
+        }
+        Update: {
+          created_at?: string | null
+          message_id?: string
+          telefono?: string
+        }
+        Relationships: []
+      }
       bots: {
         Row: {
           activo: boolean | null
@@ -21,6 +118,7 @@ export type Database = {
           catalogo_nichos: Json | null
           cliente_id: string
           created_at: string | null
+          email_dueno: string | null
           empresa_contacto: string | null
           empresa_descripcion: string | null
           empresa_nombre: string | null
@@ -30,19 +128,25 @@ export type Database = {
           google_calendar_id: string | null
           horario_fin: string | null
           horario_inicio: string | null
+          horarios_semana: Json
           id: string
           instancia_evolution: string
+          intenciones_override: Json | null
+          meet_link: string | null
           mensaje_bienvenida: string | null
           mensaje_fuera_horario: string | null
+          nicho: string | null
           nombre: string
           nombre_agente: string | null
           notion_db_notas: string | null
           notion_db_tareas: string | null
           numero_dueno: string | null
+          numero_whatsapp_bot: string | null
           personalidad_agente: string | null
           portafolio: Json | null
           precios: Json | null
           servicios: Json | null
+          servicios_json: Json
           telefono: string
           webhook_path: string | null
           zona_horaria: string | null
@@ -53,6 +157,7 @@ export type Database = {
           catalogo_nichos?: Json | null
           cliente_id: string
           created_at?: string | null
+          email_dueno?: string | null
           empresa_contacto?: string | null
           empresa_descripcion?: string | null
           empresa_nombre?: string | null
@@ -62,19 +167,25 @@ export type Database = {
           google_calendar_id?: string | null
           horario_fin?: string | null
           horario_inicio?: string | null
+          horarios_semana?: Json
           id?: string
           instancia_evolution: string
+          intenciones_override?: Json | null
+          meet_link?: string | null
           mensaje_bienvenida?: string | null
           mensaje_fuera_horario?: string | null
+          nicho?: string | null
           nombre: string
           nombre_agente?: string | null
           notion_db_notas?: string | null
           notion_db_tareas?: string | null
           numero_dueno?: string | null
+          numero_whatsapp_bot?: string | null
           personalidad_agente?: string | null
           portafolio?: Json | null
           precios?: Json | null
           servicios?: Json | null
+          servicios_json?: Json
           telefono: string
           webhook_path?: string | null
           zona_horaria?: string | null
@@ -85,6 +196,7 @@ export type Database = {
           catalogo_nichos?: Json | null
           cliente_id?: string
           created_at?: string | null
+          email_dueno?: string | null
           empresa_contacto?: string | null
           empresa_descripcion?: string | null
           empresa_nombre?: string | null
@@ -94,19 +206,25 @@ export type Database = {
           google_calendar_id?: string | null
           horario_fin?: string | null
           horario_inicio?: string | null
+          horarios_semana?: Json
           id?: string
           instancia_evolution?: string
+          intenciones_override?: Json | null
+          meet_link?: string | null
           mensaje_bienvenida?: string | null
           mensaje_fuera_horario?: string | null
+          nicho?: string | null
           nombre?: string
           nombre_agente?: string | null
           notion_db_notas?: string | null
           notion_db_tareas?: string | null
           numero_dueno?: string | null
+          numero_whatsapp_bot?: string | null
           personalidad_agente?: string | null
           portafolio?: Json | null
           precios?: Json | null
           servicios?: Json | null
+          servicios_json?: Json
           telefono?: string
           webhook_path?: string | null
           zona_horaria?: string | null
@@ -118,6 +236,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "clientes"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bots_nicho_fkey"
+            columns: ["nicho"]
+            isOneToOne: false
+            referencedRelation: "nichos_templates"
+            referencedColumns: ["nicho_id"]
           },
         ]
       }
@@ -132,6 +257,7 @@ export type Database = {
           fecha_fin: string | null
           id: string
           lead_id: string | null
+          meet_link: string | null
           nombre_cliente: string | null
           recordatorio_1h_enviado: boolean | null
           recordatorio_24h_enviado: boolean | null
@@ -148,6 +274,7 @@ export type Database = {
           fecha_fin?: string | null
           id?: string
           lead_id?: string | null
+          meet_link?: string | null
           nombre_cliente?: string | null
           recordatorio_1h_enviado?: boolean | null
           recordatorio_24h_enviado?: boolean | null
@@ -164,6 +291,7 @@ export type Database = {
           fecha_fin?: string | null
           id?: string
           lead_id?: string | null
+          meet_link?: string | null
           nombre_cliente?: string | null
           recordatorio_1h_enviado?: boolean | null
           recordatorio_24h_enviado?: boolean | null
@@ -196,6 +324,7 @@ export type Database = {
           id: string
           nombre: string | null
           plan: string | null
+          settings: Json
           telefono: string | null
           telefono_whatsapp: string | null
         }
@@ -207,6 +336,7 @@ export type Database = {
           id?: string
           nombre?: string | null
           plan?: string | null
+          settings?: Json
           telefono?: string | null
           telefono_whatsapp?: string | null
         }
@@ -218,6 +348,7 @@ export type Database = {
           id?: string
           nombre?: string | null
           plan?: string | null
+          settings?: Json
           telefono?: string | null
           telefono_whatsapp?: string | null
         }
@@ -383,6 +514,95 @@ export type Database = {
           },
         ]
       }
+      invites: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          empresa: string | null
+          expires_at: string | null
+          nombre: string | null
+          token: string
+          used_at: string | null
+          used_by: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          empresa?: string | null
+          expires_at?: string | null
+          nombre?: string | null
+          token: string
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          empresa?: string | null
+          expires_at?: string | null
+          nombre?: string | null
+          token?: string
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Relationships: []
+      }
+      knowledge_base: {
+        Row: {
+          answer: string
+          category: string
+          cliente_id: string
+          created_at: string
+          embedding: string | null
+          id: string
+          last_used_at: string | null
+          question: string
+          source: string | null
+          source_ref: Json | null
+          tags: string[] | null
+          updated_at: string
+          usage_count: number
+        }
+        Insert: {
+          answer: string
+          category: string
+          cliente_id: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          last_used_at?: string | null
+          question: string
+          source?: string | null
+          source_ref?: Json | null
+          tags?: string[] | null
+          updated_at?: string
+          usage_count?: number
+        }
+        Update: {
+          answer?: string
+          category?: string
+          cliente_id?: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          last_used_at?: string | null
+          question?: string
+          source?: string | null
+          source_ref?: Json | null
+          tags?: string[] | null
+          updated_at?: string
+          usage_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_base_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
           cliente_id: string
@@ -406,6 +626,7 @@ export type Database = {
           necesidad: string | null
           nivel_interes: string | null
           nombre: string | null
+          nombre_negocio: string | null
           notas_ia: string | null
           notas_negocio: string | null
           num_empleados: string | null
@@ -443,6 +664,7 @@ export type Database = {
           necesidad?: string | null
           nivel_interes?: string | null
           nombre?: string | null
+          nombre_negocio?: string | null
           notas_ia?: string | null
           notas_negocio?: string | null
           num_empleados?: string | null
@@ -480,6 +702,7 @@ export type Database = {
           necesidad?: string | null
           nivel_interes?: string | null
           nombre?: string | null
+          nombre_negocio?: string | null
           notas_ia?: string | null
           notas_negocio?: string | null
           num_empleados?: string | null
@@ -566,6 +789,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      nichos_templates: {
+        Row: {
+          alias_intenciones: Json
+          created_at: string
+          horario_ejemplo: Json
+          intenciones_default: Json
+          mensajes_fallback: Json
+          nicho_id: string
+          nombre_display: string
+          prompt_base: string
+          servicios_ejemplo: Json
+          updated_at: string
+        }
+        Insert: {
+          alias_intenciones?: Json
+          created_at?: string
+          horario_ejemplo?: Json
+          intenciones_default?: Json
+          mensajes_fallback?: Json
+          nicho_id: string
+          nombre_display: string
+          prompt_base: string
+          servicios_ejemplo?: Json
+          updated_at?: string
+        }
+        Update: {
+          alias_intenciones?: Json
+          created_at?: string
+          horario_ejemplo?: Json
+          intenciones_default?: Json
+          mensajes_fallback?: Json
+          nicho_id?: string
+          nombre_display?: string
+          prompt_base?: string
+          servicios_ejemplo?: Json
+          updated_at?: string
+        }
+        Relationships: []
       }
       notificaciones: {
         Row: {
@@ -667,6 +929,27 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limit_buckets: {
+        Row: {
+          count: number
+          created_at: string
+          key: string
+          window_start: string
+        }
+        Insert: {
+          count?: number
+          created_at?: string
+          key: string
+          window_start?: string
+        }
+        Update: {
+          count?: number
+          created_at?: string
+          key?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       servicios_precios: {
         Row: {
           activo: boolean | null
@@ -699,6 +982,130 @@ export type Database = {
           precio_hasta?: number | null
         }
         Relationships: []
+      }
+      soporte_mensajes: {
+        Row: {
+          asunto: string | null
+          autor: string
+          cliente_id: string
+          created_at: string
+          estado: string
+          id: string
+          leido_por_cliente: boolean
+          leido_por_soporte: boolean
+          mensaje: string
+          prioridad: string
+          updated_at: string
+        }
+        Insert: {
+          asunto?: string | null
+          autor: string
+          cliente_id: string
+          created_at?: string
+          estado?: string
+          id?: string
+          leido_por_cliente?: boolean
+          leido_por_soporte?: boolean
+          mensaje: string
+          prioridad?: string
+          updated_at?: string
+        }
+        Update: {
+          asunto?: string | null
+          autor?: string
+          cliente_id?: string
+          created_at?: string
+          estado?: string
+          id?: string
+          leido_por_cliente?: boolean
+          leido_por_soporte?: boolean
+          mensaje?: string
+          prioridad?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "soporte_mensajes_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stripe_purchases: {
+        Row: {
+          amount_total_cents: number
+          billing_interval: string | null
+          cliente_id: string | null
+          created_at: string
+          currency: string
+          customer_name: string | null
+          email: string
+          id: string
+          mode: string
+          onboarded_at: string | null
+          plan_slug: string | null
+          price_id: string | null
+          product_id: string | null
+          raw_event: Json
+          status: string
+          stripe_customer_id: string | null
+          stripe_event_id: string
+          stripe_session_id: string
+          stripe_subscription_id: string | null
+        }
+        Insert: {
+          amount_total_cents: number
+          billing_interval?: string | null
+          cliente_id?: string | null
+          created_at?: string
+          currency?: string
+          customer_name?: string | null
+          email: string
+          id?: string
+          mode: string
+          onboarded_at?: string | null
+          plan_slug?: string | null
+          price_id?: string | null
+          product_id?: string | null
+          raw_event: Json
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_event_id: string
+          stripe_session_id: string
+          stripe_subscription_id?: string | null
+        }
+        Update: {
+          amount_total_cents?: number
+          billing_interval?: string | null
+          cliente_id?: string | null
+          created_at?: string
+          currency?: string
+          customer_name?: string | null
+          email?: string
+          id?: string
+          mode?: string
+          onboarded_at?: string | null
+          plan_slug?: string | null
+          price_id?: string | null
+          product_id?: string | null
+          raw_event?: Json
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_event_id?: string
+          stripe_session_id?: string
+          stripe_subscription_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_purchases_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       whatsapp_historial: {
         Row: {
@@ -737,15 +1144,6 @@ export type Database = {
       }
     }
     Views: {
-      v_actividad_por_hora: {
-        Row: {
-          hora: number | null
-          msgs_bot: number | null
-          msgs_clientes: number | null
-          total_mensajes: number | null
-        }
-        Relationships: []
-      }
       v_actividad_reciente: {
         Row: {
           cliente_id: string | null
@@ -916,16 +1314,46 @@ export type Database = {
           },
         ]
       }
-      v_tiempo_respuesta: {
-        Row: {
-          fecha: string | null
-          segundos_promedio_respuesta: number | null
-          total_conversaciones: number | null
-        }
-        Relationships: []
-      }
     }
     Functions: {
+      admin_onboard_cliente: {
+        Args: {
+          p_auth_user_id: string
+          p_email: string
+          p_email_dueno: string
+          p_empresa: string
+          p_nicho: string
+          p_nombre: string
+          p_nombre_agente: string
+          p_numero_dueno: string
+          p_numero_whatsapp_bot: string
+          p_webhook_path: string
+        }
+        Returns: {
+          bot_id: string
+          cliente_id: string
+        }[]
+      }
+      auth_cliente_id: { Args: never; Returns: string }
+      consume_invite: {
+        Args: { p_token: string; p_user_id: string }
+        Returns: boolean
+      }
+      create_invite: {
+        Args: { p_email?: string; p_empresa?: string; p_nombre?: string }
+        Returns: string
+      }
+      get_calendar_credentials: {
+        Args: { p_cliente_id: string }
+        Returns: {
+          access_token: string
+          calendar_id: string
+          expires_at: string
+          google_email: string
+          needs_refresh: boolean
+          refresh_token: string
+        }[]
+      }
       get_embudo_conversion: {
         Args: { p_cliente_id: string; p_dias?: number }
         Returns: {
@@ -954,6 +1382,40 @@ export type Database = {
           conversaciones_sin_respuesta: number
           msgs_promedio_hasta_cita: number
           msgs_promedio_sin_cita: number
+        }[]
+      }
+      kb_search: {
+        Args: {
+          p_cliente_id: string
+          p_embedding: string
+          p_limit?: number
+          p_threshold?: number
+        }
+        Returns: {
+          answer: string
+          category: string
+          id: string
+          question: string
+          similarity: number
+        }[]
+      }
+      rate_limit_check: {
+        Args: { p_key: string; p_limit: number; p_window_seconds: number }
+        Returns: {
+          allowed: boolean
+          current_count: number
+          reset_at: string
+          retry_after_seconds: number
+        }[]
+      }
+      rate_limit_cleanup: { Args: never; Returns: number }
+      validate_invite: {
+        Args: { p_token: string }
+        Returns: {
+          email: string
+          empresa: string
+          nombre: string
+          valid: boolean
         }[]
       }
     }

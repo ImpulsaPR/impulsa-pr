@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Save, Bell, Shield, Palette, Globe, Zap, Loader2, Camera, Trash2 } from 'lucide-react'
 import { getSupabase } from '@/lib/supabase'
 import { useCliente } from '@/hooks/use-cliente'
@@ -83,23 +83,51 @@ export default function SettingsPage() {
     setNombre(cliente.nombre || '')
     setEmail(cliente.email || '')
     setEmpresa(cliente.empresa || '')
+
+    // Cargar settings persistidos en DB (cliente.settings jsonb).
+    // Fallback a localStorage si DB no tiene nada (transición desde la versión vieja).
+    const dbSettings = (cliente as { settings?: Record<string, unknown> }).settings || {}
+    const dbToggles = (dbSettings.toggles as Record<string, boolean>) || {}
+    const dbTz = (dbSettings.timezone as string) || ''
+
+    if (Object.keys(dbToggles).length > 0) {
+      setToggles((prev) => ({ ...prev, ...dbToggles }))
+    } else {
+      // Migración one-shot desde localStorage si nunca se persistió
+      const saved = localStorage.getItem('impulsa_settings')
+      if (saved) {
+        try {
+          setToggles((prev) => ({ ...prev, ...JSON.parse(saved) }))
+        } catch { /* ignore */ }
+      }
+    }
+    if (dbTz) setTimezone(dbTz)
+    else {
+      const savedTz = localStorage.getItem('impulsa_timezone')
+      if (savedTz) setTimezone(savedTz)
+    }
   }, [cliente])
 
-  useEffect(() => {
-    const saved = localStorage.getItem('impulsa_settings')
-    if (saved) {
-      try {
-        setToggles((prev) => ({ ...prev, ...JSON.parse(saved) }))
-      } catch { /* ignore */ }
-    }
-    const savedTz = localStorage.getItem('impulsa_timezone')
-    if (savedTz) setTimezone(savedTz)
-  }, [])
+  const persistSettings = useCallback(
+    async (patch: { toggles?: Record<string, boolean>; timezone?: string }) => {
+      if (!cliente) return
+      const current = (cliente as { settings?: Record<string, unknown> }).settings || {}
+      const next = {
+        ...current,
+        ...(patch.toggles && { toggles: { ...((current.toggles as object) || {}), ...patch.toggles } }),
+        ...(patch.timezone && { timezone: patch.timezone }),
+      }
+      await getSupabase().from('clientes').update({ settings: next }).eq('id', cliente.id)
+    },
+    [cliente]
+  )
 
   const handleToggle = (key: string) => {
     setToggles((prev) => {
       const next = { ...prev, [key]: !prev[key] }
+      // Persistir en DB (defensa: localStorage como cache)
       localStorage.setItem('impulsa_settings', JSON.stringify(next))
+      persistSettings({ toggles: { [key]: next[key] } }).catch(() => {})
       return next
     })
   }
@@ -387,8 +415,10 @@ export default function SettingsPage() {
             <select
               value={timezone}
               onChange={(e) => {
-                setTimezone(e.target.value)
-                localStorage.setItem('impulsa_timezone', e.target.value)
+                const tz = e.target.value
+                setTimezone(tz)
+                localStorage.setItem('impulsa_timezone', tz)
+                persistSettings({ timezone: tz }).catch(() => {})
               }}
               className={inputClass}
             >
