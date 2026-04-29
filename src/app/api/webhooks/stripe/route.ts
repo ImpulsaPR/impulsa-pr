@@ -51,18 +51,25 @@ function verifyStripeSignature(payload: string, header: string, secret: string):
   })
 }
 
-// Notifica al dueño por WhatsApp via YCloud (fire-and-forget).
-// Si falta YCLOUD_API_KEY o NOTIFY_OWNER_PHONE, simplemente no manda nada y loguea.
-function notifyOwner(opts: {
+// Notifica al dueño por WhatsApp via YCloud.
+// AWAITED — Vercel serverless functions matan la lambda al return, así que
+// fire-and-forget no funciona; debemos esperar que YCloud responda.
+async function notifyOwner(opts: {
   email: string
   customerName: string | null
   planLabel: string
   intervalSuffix: string
   amountUsd: string
   currency: string
-}): void {
-  if (!YCLOUD_API_KEY || !NOTIFY_OWNER_PHONE) {
-    console.warn('[stripe/webhook] notif skip — YCLOUD_API_KEY o NOTIFY_OWNER_PHONE no configurado')
+}): Promise<void> {
+  const apiKey = YCLOUD_API_KEY.trim()
+  const toPhone = NOTIFY_OWNER_PHONE.trim()
+  const fromPhone = YCLOUD_FROM_NUMBER.trim()
+  if (!apiKey || !toPhone) {
+    console.warn('[stripe/webhook] notif skip — YCLOUD_API_KEY o NOTIFY_OWNER_PHONE no configurado', {
+      hasKey: !!apiKey,
+      hasTo: !!toPhone,
+    })
     return
   }
   const cliente = opts.customerName?.trim() || opts.email
@@ -74,22 +81,26 @@ function notifyOwner(opts: {
     `Monto: $${opts.amountUsd} ${opts.currency.toUpperCase()}\n\n` +
     `Onboardealo aqui:\n${ADMIN_VENTAS_URL}`
 
-  fetch('https://api.ycloud.com/v2/whatsapp/messages', {
-    method: 'POST',
-    headers: { 'X-API-Key': YCLOUD_API_KEY, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      from: YCLOUD_FROM_NUMBER,
-      to: NOTIFY_OWNER_PHONE,
-      type: 'text',
-      text: { body },
-    }),
-  })
-    .then(async (r) => {
-      if (!r.ok) {
-        console.error('[stripe/webhook] notif YCloud HTTP', r.status, await r.text().catch(() => ''))
-      }
+  try {
+    const r = await fetch('https://api.ycloud.com/v2/whatsapp/messages', {
+      method: 'POST',
+      headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: fromPhone,
+        to: toPhone,
+        type: 'text',
+        text: { body },
+      }),
     })
-    .catch((e) => console.error('[stripe/webhook] notif YCloud throw', e))
+    const txt = await r.text().catch(() => '')
+    if (!r.ok) {
+      console.error('[stripe/webhook] notif YCloud HTTP', r.status, txt)
+    } else {
+      console.log('[stripe/webhook] notif YCloud OK', txt.slice(0, 200))
+    }
+  } catch (e) {
+    console.error('[stripe/webhook] notif YCloud throw', e instanceof Error ? e.message : e)
+  }
 }
 
 // Llama al API Stripe para expandir line_items (no vienen en el evento).
@@ -207,8 +218,10 @@ export async function POST(req: Request) {
 
   console.log('[stripe/webhook] purchase registrado', { email, planSlug, session: session.id })
 
-  // Notificar al dueño (best-effort, fire-and-forget — no bloquea response a Stripe)
-  notifyOwner({
+  // Notificar al dueño — AWAITED para garantizar que la lambda no muera
+  // antes de que YCloud reciba el request. Agrega ~500ms de latencia,
+  // muy dentro del límite de 30s de Stripe.
+  await notifyOwner({
     email,
     customerName: session.customer_details?.name || null,
     planLabel: plan?.name || 'Plan',
