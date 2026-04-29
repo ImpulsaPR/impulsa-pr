@@ -16,6 +16,17 @@ const YCLOUD_FROM_NUMBER = process.env.YCLOUD_FROM_NUMBER || '+19399052410'
 const ADMIN_VENTAS_URL = 'https://cliente.impulsapr.com/admin/ventas'
 const SIGNATURE_TOLERANCE_S = 300 // 5 min
 
+// Redacta email para logs: "juan.perez@gmail.com" -> "j***@gmail.com".
+// Suficiente para correlacionar con un cliente real sin exponer PII en
+// Vercel logs.
+function redactEmail(email: string | null | undefined): string {
+  if (!email) return '<none>'
+  const [local, domain] = email.split('@')
+  if (!domain) return '<invalid>'
+  const head = local?.[0] ?? '?'
+  return `${head}***@${domain}`
+}
+
 // Verifica la firma del header Stripe-Signature usando crypto puro.
 // Formato: t=<timestamp>,v1=<sig1>,v1=<sig2>,...
 function verifyStripeSignature(payload: string, header: string, secret: string): boolean {
@@ -92,11 +103,12 @@ async function notifyOwner(opts: {
         text: { body },
       }),
     })
-    const txt = await r.text().catch(() => '')
     if (!r.ok) {
-      console.error('[stripe/webhook] notif YCloud HTTP', r.status, txt)
+      const txt = await r.text().catch(() => '')
+      console.error('[stripe/webhook] notif YCloud HTTP', r.status, txt.slice(0, 100))
     } else {
-      console.log('[stripe/webhook] notif YCloud OK', txt.slice(0, 200))
+      // No loguear body de YCloud — incluye el numero destino (PII).
+      console.log('[stripe/webhook] notif YCloud OK')
     }
   } catch (e) {
     console.error('[stripe/webhook] notif YCloud throw', e instanceof Error ? e.message : e)
@@ -216,7 +228,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'db' }, { status: 500 })
   }
 
-  console.log('[stripe/webhook] purchase registrado', { email, planSlug, session: session.id })
+  console.log('[stripe/webhook] purchase registrado', {
+    email: redactEmail(email),
+    planSlug,
+    session: session.id,
+  })
 
   // Notificar al dueño — AWAITED para garantizar que la lambda no muera
   // antes de que YCloud reciba el request. Agrega ~500ms de latencia,
